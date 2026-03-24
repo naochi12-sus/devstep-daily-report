@@ -74,8 +74,8 @@
 
 ## データベース設計（ER図）
 
-![ER図](./er-diagram.png)
+![ER図](docs/er-diagram.png)
 
 ## 画面設計（画面遷移図）
 
-![ER図](./wireframes.png)
+![画面遷移図](docs/wireframes.png)
