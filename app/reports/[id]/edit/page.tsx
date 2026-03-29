@@ -8,7 +8,7 @@ export default function EditReportScreen() {
             <header className="bg-[#1e3a8a] text-white shadow-md sticky top-0 z-10">
                 <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
                     <div className="text-xl font-bold tracking-wider cursor-pointer">
-                        DevStep Daily
+                        Team Activity Log
                     </div>
                     <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity">
                         <span className="text-sm font-medium">

@@ -1,23 +1,86 @@
-export default function EditReportScreen() {
-    // プレビュー用アバター（DiceBear API）
-    const avatarUrl = `https://api.dicebear.com/7.x/shapes/svg?seed=Yamada&backgroundColor=0a5b83,1c799f,69d2e7,f1f4dc,f88c49`;
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+
+export default function CreateReportScreen() {
+    // 新規作成なので名前を変更
+    const router = useRouter();
+
+    const [title, setTitle] = useState("");
+    const [content, setContent] = useState("");
+    const [category, setCategory] = useState("dev");
+    const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+    const [loading, setLoading] = useState(false);
+    const [userName, setUserName] = useState("");
+    const [userId, setUserId] = useState<string | null>(null); // user_id保持用
+
+    useEffect(() => {
+        const getUser = async () => {
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
+            if (user) {
+                setUserName(user.user_metadata.full_name || "名無し");
+                setUserId(user.id); // 自分のIDをセット
+            }
+        };
+        getUser();
+    }, []);
+
+    const handleSave = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!userId) return alert("ログインしてください");
+
+        setLoading(true);
+
+        const { error } = await supabase.from("daily_reports").insert([
+            {
+                user_id: userId,
+                user_name: userName,
+                title: title,
+                content: content,
+                category: category,
+                date: date,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+            },
+        ]);
+
+        if (error) {
+            alert("保存に失敗しました: " + error.message);
+            console.error(error);
+        } else {
+            alert("日報を保存しました！");
+            router.push("/"); // ダッシュボードへ戻る
+        }
+        setLoading(false);
+    };
+
+    // --- 以下、JSX（見た目）の部分は変更なしでOK ---
+    const avatarUrl = userName
+        ? `https://api.dicebear.com/7.x/shapes/svg?seed=${userName}&backgroundColor=0a5b83,1c799f,69d2e7,f1f4dc,f88c49`
+        : "";
 
     return (
         <div className="min-h-screen bg-[#f3f4f6] font-sans text-slate-900">
-            {/* 共通ヘッダー */}
             <header className="bg-[#1e3a8a] text-white shadow-md sticky top-0 z-10">
                 <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-                    <div className="text-xl font-bold tracking-wider cursor-pointer">
-                        DevStep Daily
+                    <div
+                        onClick={() => router.push("/")}
+                        className="text-xl font-bold tracking-wider cursor-pointer"
+                    >
+                        Team Activity Log
                     </div>
-                    <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity">
+                    <div className="flex items-center gap-3">
                         <span className="text-sm font-medium">
-                            {"山田 太郎 ▼"}
+                            {userName ? `${userName} ▼` : "読み込み中..."}
                         </span>
                         <div className="h-9 w-9 rounded-full bg-white text-[#1e3a8a] overflow-hidden shadow-inner border border-slate-200">
                             <img
                                 src={avatarUrl}
-                                alt="Avatar"
+                                alt=""
                                 className="w-full h-full object-cover"
                             />
                         </div>
@@ -25,37 +88,16 @@ export default function EditReportScreen() {
                 </div>
             </header>
 
-            {/* メインコンテンツ */}
             <main className="max-w-3xl mx-auto px-6 py-10">
-                {/* タイトルと削除ボタンの行 */}
-                <div className="mb-6 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <button className="text-slate-400 hover:text-[#2dd4bf] transition-colors">
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="24"
-                                height="24"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            >
-                                <path d="m15 18-6-6 6-6" />
-                            </svg>
-                        </button>
-                        <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">
-                            日報の編集
-                        </h1>
-                    </div>
-
-                    {/* 削除ボタン（右上にさりげなく、かつ赤色で警告を意味するデザイン） */}
-                    <button className="flex items-center gap-1.5 text-sm font-bold text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-md transition-colors">
+                <div className="mb-6 flex items-center gap-3">
+                    <button
+                        onClick={() => router.back()}
+                        className="text-slate-400 hover:text-[#2dd4bf] transition-colors"
+                    >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
-                            width="16"
-                            height="16"
+                            width="24"
+                            height="24"
                             viewBox="0 0 24 24"
                             fill="none"
                             stroke="currentColor"
@@ -63,50 +105,40 @@ export default function EditReportScreen() {
                             strokeLinecap="round"
                             strokeLinejoin="round"
                         >
-                            <path d="M3 6h18" />
-                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                            <line x1="10" x2="10" y1="11" y2="17" />
-                            <line x1="14" x2="14" y1="11" y2="17" />
+                            <path d="m15 18-6-6 6-6" />
                         </svg>
-                        日報を削除
                     </button>
+                    <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">
+                        新規日報作成
+                    </h1>
                 </div>
 
-                {/* フォームカード */}
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <form className="p-8 space-y-6">
-                        {/* 2カラムレイアウト（日付とカテゴリ） */}
+                    <form className="p-8 space-y-6" onSubmit={handleSave}>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* 日付選択（defaultValueで既存データが入っている状態を表現） */}
                             <div className="space-y-2">
-                                <label
-                                    className="block text-sm font-bold text-slate-700"
-                                    htmlFor="date"
-                                >
+                                <label className="block text-sm font-bold text-slate-700">
                                     日付 <span className="text-red-500">*</span>
                                 </label>
                                 <input
-                                    id="date"
                                     type="date"
-                                    defaultValue="2024-05-24"
-                                    className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:bg-white focus:outline-none focus:border-[#2dd4bf] focus:ring-2 focus:ring-[#2dd4bf]/20 transition-all"
+                                    value={date}
+                                    onChange={(e) => setDate(e.target.value)}
+                                    className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 text-sm focus:bg-white focus:outline-none focus:border-[#2dd4bf] focus:ring-2 focus:ring-[#2dd4bf]/20 transition-all"
+                                    required
                                 />
                             </div>
-
-                            {/* カテゴリ選択 */}
                             <div className="space-y-2">
-                                <label
-                                    className="block text-sm font-bold text-slate-700"
-                                    htmlFor="category"
-                                >
+                                <label className="block text-sm font-bold text-slate-700">
                                     カテゴリ{" "}
                                     <span className="text-red-500">*</span>
                                 </label>
                                 <select
-                                    id="category"
-                                    defaultValue="dev"
-                                    className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:bg-white focus:outline-none focus:border-[#2dd4bf] focus:ring-2 focus:ring-[#2dd4bf]/20 transition-all"
+                                    value={category}
+                                    onChange={(e) =>
+                                        setCategory(e.target.value)
+                                    }
+                                    className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 text-sm focus:bg-white focus:outline-none focus:border-[#2dd4bf] focus:ring-2 focus:ring-[#2dd4bf]/20 transition-all"
                                 >
                                     <option value="dev">開発</option>
                                     <option value="meeting">会議</option>
@@ -115,84 +147,47 @@ export default function EditReportScreen() {
                                 </select>
                             </div>
                         </div>
-
-                        {/* タイトル入力 */}
                         <div className="space-y-2">
-                            <label
-                                className="block text-sm font-bold text-slate-700"
-                                htmlFor="title"
-                            >
+                            <label className="block text-sm font-bold text-slate-700">
                                 タイトル <span className="text-red-500">*</span>
                             </label>
                             <input
-                                id="title"
                                 type="text"
-                                defaultValue="本日の開発進捗と来週の予定"
-                                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:bg-white focus:outline-none focus:border-[#2dd4bf] focus:ring-2 focus:ring-[#2dd4bf]/20 transition-all"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                placeholder="例：本日の開発進捗について"
+                                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 text-sm focus:bg-white focus:outline-none focus:border-[#2dd4bf] focus:ring-2 focus:ring-[#2dd4bf]/20 transition-all"
+                                required
                             />
                         </div>
-
-                        {/* 本文入力（長文がすでに入っている状態） */}
                         <div className="space-y-2">
-                            <label
-                                className="block text-sm font-bold text-slate-700"
-                                htmlFor="content"
-                            >
+                            <label className="block text-sm font-bold text-slate-700">
                                 業務内容・所感{" "}
                                 <span className="text-red-500">*</span>
                             </label>
                             <textarea
-                                id="content"
-                                rows={12}
-                                defaultValue={`お疲れ様です。山田です。
-
-1. 本日の業務内容
-・〇〇機能のAPI実装（完了）
-・フロントエンドとの連携テスト（完了）
-
-2. 発生した課題
-・特になし。APIのレスポンス速度も想定通り基準値を満たしています。
-
-3. 明日の予定
-・UIの仕上げ（Tailwind CSSの調整）
-・PRの作成とコードレビュー依頼
-
-4. 所感
-今週は順調にタスクを消化できました。来週のリリースに向けて、週末は少しリフレッシュして月曜日に備えたいと思います。`}
-                                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 leading-relaxed focus:bg-white focus:outline-none focus:border-[#2dd4bf] focus:ring-2 focus:ring-[#2dd4bf]/20 transition-all resize-y"
+                                rows={10}
+                                value={content}
+                                onChange={(e) => setContent(e.target.value)}
+                                placeholder="本日の業務内容や気づきを記入してください"
+                                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 text-sm leading-relaxed focus:bg-white focus:outline-none focus:border-[#2dd4bf] focus:ring-2 focus:ring-[#2dd4bf]/20 transition-all resize-y"
+                                required
                             ></textarea>
                         </div>
-
-                        {/* アクションボタン（フッターエリア） */}
                         <div className="pt-6 border-t border-slate-100 flex justify-end gap-3">
                             <button
                                 type="button"
-                                className="px-6 py-3 rounded-lg font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-800 transition-colors"
+                                onClick={() => router.push("/")}
+                                className="px-6 py-3 rounded-lg font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors"
                             >
                                 キャンセル
                             </button>
-
-                            {/* ボタンの文言とアイコンを「保存」に合わせて変更 */}
                             <button
-                                type="button"
-                                className="px-8 py-3 rounded-lg font-bold text-white bg-[#2dd4bf] hover:bg-[#25b5a3] shadow-sm transition-colors flex items-center gap-2"
+                                type="submit"
+                                disabled={loading}
+                                className="px-8 py-3 rounded-lg font-bold text-white bg-[#2dd4bf] hover:bg-[#25b5a3] shadow-sm transition-colors flex items-center gap-2 disabled:opacity-50"
                             >
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="18"
-                                    height="18"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2.5"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                >
-                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                                    <polyline points="17 21 17 13 7 13 7 21" />
-                                    <polyline points="7 3 7 8 15 8" />
-                                </svg>
-                                変更を保存する
+                                {loading ? "保存中..." : "日報を保存する"}
                             </button>
                         </div>
                     </form>
