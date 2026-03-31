@@ -1,112 +1,149 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation"; // URLからIDを取得するために追加
+import { supabase } from "@/lib/supabase";
+import { ChevronLeft, Trash2, Save } from "lucide-react"; // アイコンライブラリを使用
+
 export default function EditReportScreen() {
-    // プレビュー用アバター（DiceBear API）
-    const avatarUrl = `https://api.dicebear.com/7.x/shapes/svg?seed=Yamada&backgroundColor=0a5b83,1c799f,69d2e7,f1f4dc,f88c49`;
+    const router = useRouter();
+    const params = useParams(); // /reports/[id]/edit の [id] 部分を取得
+    const reportId = params.id as string;
+
+    // --- 状態管理 (State) ---
+    const [loading, setLoading] = useState(true);
+    const [title, setTitle] = useState("");
+    const [date, setDate] = useState("");
+    const [category, setCategory] = useState("dev");
+    const [content, setContent] = useState("");
+
+    // --- 1. 既存データの読み込み ---
+    useEffect(() => {
+        const fetchReport = async () => {
+            const { data, error } = await supabase
+                .from("daily_reports")
+                .select("*")
+                .eq("id", reportId)
+                .single(); // 1件だけ取得
+
+            if (error) {
+                alert("データの取得に失敗しました");
+                router.push("/reports");
+                return;
+            }
+
+            if (data) {
+                setTitle(data.title);
+                setDate(data.date);
+                setCategory(data.category);
+                setContent(data.content);
+            }
+            setLoading(false);
+        };
+
+        if (reportId) fetchReport();
+    }, [reportId, router]);
+
+    // --- 2. 保存処理 (Update) ---
+    const handleUpdate = async () => {
+        if (!title || !date || !content) {
+            alert("必須項目を入力してください");
+            return;
+        }
+
+        const { error } = await supabase
+            .from("daily_reports")
+            .update({ title, date, category, content, updated_at: new Date() })
+            .eq("id", reportId);
+
+        if (error) {
+            alert("更新に失敗しました: " + error.message);
+        } else {
+            alert("更新しました！");
+            router.push(`/reports/${reportId}`); // 詳細画面へ戻る
+        }
+    };
+
+    // --- 3. 削除処理 (Delete) ---
+    const handleDelete = async () => {
+        if (!confirm("本当にこの日報を削除しますか？")) return;
+
+        const { error } = await supabase
+            .from("daily_reports")
+            .delete()
+            .eq("id", reportId);
+
+        if (error) {
+            alert("削除に失敗しました");
+        } else {
+            router.push("/reports"); // 一覧へ戻る
+        }
+    };
+
+    if (loading) return <div className="p-10 text-center">読み込み中...</div>;
 
     return (
         <div className="min-h-screen bg-[#f3f4f6] font-sans text-slate-900">
-            {/* 共通ヘッダー */}
+            {/* ヘッダー部分は省略せずそのまま活用してください */}
             <header className="bg-[#1e3a8a] text-white shadow-md sticky top-0 z-10">
                 <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-                    <div className="text-xl font-bold tracking-wider cursor-pointer">
+                    <div
+                        onClick={() => router.push("/reports")}
+                        className="text-xl font-bold cursor-pointer"
+                    >
                         Team Activity Log
-                    </div>
-                    <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity">
-                        <span className="text-sm font-medium">
-                            {"山田 太郎 ▼"}
-                        </span>
-                        <div className="h-9 w-9 rounded-full bg-white text-[#1e3a8a] overflow-hidden shadow-inner border border-slate-200">
-                            <img
-                                src={avatarUrl}
-                                alt="Avatar"
-                                className="w-full h-full object-cover"
-                            />
-                        </div>
                     </div>
                 </div>
             </header>
 
-            {/* メインコンテンツ */}
             <main className="max-w-3xl mx-auto px-6 py-10">
-                {/* タイトルと削除ボタンの行 */}
                 <div className="mb-6 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <button className="text-slate-400 hover:text-[#2dd4bf] transition-colors">
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="24"
-                                height="24"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            >
-                                <path d="m15 18-6-6 6-6" />
-                            </svg>
+                        <button
+                            onClick={() => router.back()}
+                            className="text-slate-400 hover:text-[#2dd4bf]"
+                        >
+                            <ChevronLeft size={24} />
                         </button>
-                        <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">
+                        <h1 className="text-2xl font-extrabold text-slate-800">
                             日報の編集
                         </h1>
                     </div>
 
-                    {/* 削除ボタン（右上にさりげなく、かつ赤色で警告を意味するデザイン） */}
-                    <button className="flex items-center gap-1.5 text-sm font-bold text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-md transition-colors">
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                        >
-                            <path d="M3 6h18" />
-                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                            <line x1="10" x2="10" y1="11" y2="17" />
-                            <line x1="14" x2="14" y1="11" y2="17" />
-                        </svg>
+                    <button
+                        onClick={handleDelete}
+                        className="flex items-center gap-1.5 text-sm font-bold text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-md transition-colors"
+                    >
+                        <Trash2 size={16} />
                         日報を削除
                     </button>
                 </div>
 
-                {/* フォームカード */}
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <form className="p-8 space-y-6">
-                        {/* 2カラムレイアウト（日付とカテゴリ） */}
+                    <div className="p-8 space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* 日付選択（defaultValueで既存データが入っている状態を表現） */}
                             <div className="space-y-2">
-                                <label
-                                    className="block text-sm font-bold text-slate-700"
-                                    htmlFor="date"
-                                >
-                                    日付 <span className="text-red-500">*</span>
+                                <label className="block text-sm font-bold text-slate-700">
+                                    日付 *
                                 </label>
                                 <input
-                                    id="date"
                                     type="date"
-                                    defaultValue="2024-05-24"
-                                    className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:bg-white focus:outline-none focus:border-[#2dd4bf] focus:ring-2 focus:ring-[#2dd4bf]/20 transition-all"
+                                    value={date}
+                                    onChange={(e) => setDate(e.target.value)}
+                                    className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-[#2dd4bf] transition-all"
                                 />
                             </div>
 
-                            {/* カテゴリ選択 */}
                             <div className="space-y-2">
-                                <label
-                                    className="block text-sm font-bold text-slate-700"
-                                    htmlFor="category"
-                                >
-                                    カテゴリ{" "}
-                                    <span className="text-red-500">*</span>
+                                <label className="block text-sm font-bold text-slate-700">
+                                    カテゴリ *
                                 </label>
                                 <select
-                                    id="category"
-                                    defaultValue="dev"
-                                    className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:bg-white focus:outline-none focus:border-[#2dd4bf] focus:ring-2 focus:ring-[#2dd4bf]/20 transition-all"
+                                    value={category}
+                                    onChange={(e) =>
+                                        setCategory(e.target.value)
+                                    }
+                                    className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-[#2dd4bf] transition-all"
                                 >
                                     <option value="dev">開発</option>
                                     <option value="meeting">会議</option>
@@ -116,86 +153,49 @@ export default function EditReportScreen() {
                             </div>
                         </div>
 
-                        {/* タイトル入力 */}
                         <div className="space-y-2">
-                            <label
-                                className="block text-sm font-bold text-slate-700"
-                                htmlFor="title"
-                            >
-                                タイトル <span className="text-red-500">*</span>
+                            <label className="block text-sm font-bold text-slate-700">
+                                タイトル *
                             </label>
                             <input
-                                id="title"
                                 type="text"
-                                defaultValue="本日の開発進捗と来週の予定"
-                                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:bg-white focus:outline-none focus:border-[#2dd4bf] focus:ring-2 focus:ring-[#2dd4bf]/20 transition-all"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-[#2dd4bf] transition-all"
                             />
                         </div>
 
-                        {/* 本文入力（長文がすでに入っている状態） */}
                         <div className="space-y-2">
-                            <label
-                                className="block text-sm font-bold text-slate-700"
-                                htmlFor="content"
-                            >
-                                業務内容・所感{" "}
-                                <span className="text-red-500">*</span>
+                            <label className="block text-sm font-bold text-slate-700">
+                                業務内容・所感 *
                             </label>
                             <textarea
-                                id="content"
                                 rows={12}
-                                defaultValue={`お疲れ様です。山田です。
-
-1. 本日の業務内容
-・〇〇機能のAPI実装（完了）
-・フロントエンドとの連携テスト（完了）
-
-2. 発生した課題
-・特になし。APIのレスポンス速度も想定通り基準値を満たしています。
-
-3. 明日の予定
-・UIの仕上げ（Tailwind CSSの調整）
-・PRの作成とコードレビュー依頼
-
-4. 所感
-今週は順調にタスクを消化できました。来週のリリースに向けて、週末は少しリフレッシュして月曜日に備えたいと思います。`}
-                                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 leading-relaxed focus:bg-white focus:outline-none focus:border-[#2dd4bf] focus:ring-2 focus:ring-[#2dd4bf]/20 transition-all resize-y"
+                                value={content}
+                                onChange={(e) => setContent(e.target.value)}
+                                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-[#2dd4bf] transition-all resize-y"
                             ></textarea>
                         </div>
 
-                        {/* アクションボタン（フッターエリア） */}
                         <div className="pt-6 border-t border-slate-100 flex justify-end gap-3">
                             <button
                                 type="button"
-                                className="px-6 py-3 rounded-lg font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-800 transition-colors"
+                                onClick={() => router.back()}
+                                className="px-6 py-3 rounded-lg font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors"
                             >
                                 キャンセル
                             </button>
 
-                            {/* ボタンの文言とアイコンを「保存」に合わせて変更 */}
                             <button
                                 type="button"
+                                onClick={handleUpdate}
                                 className="px-8 py-3 rounded-lg font-bold text-white bg-[#2dd4bf] hover:bg-[#25b5a3] shadow-sm transition-colors flex items-center gap-2"
                             >
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="18"
-                                    height="18"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2.5"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                >
-                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                                    <polyline points="17 21 17 13 7 13 7 21" />
-                                    <polyline points="7 3 7 8 15 8" />
-                                </svg>
+                                <Save size={18} />
                                 変更を保存する
                             </button>
                         </div>
-                    </form>
+                    </div>
                 </div>
             </main>
         </div>

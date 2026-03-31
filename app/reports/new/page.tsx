@@ -3,19 +3,21 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { ChevronLeft, Save, Loader2 } from "lucide-react";
 
 export default function CreateReportScreen() {
-    // 新規作成なので名前を変更
     const router = useRouter();
 
+    // --- 状態管理 (State) ---
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
     const [category, setCategory] = useState("dev");
     const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
     const [loading, setLoading] = useState(false);
     const [userName, setUserName] = useState("");
-    const [userId, setUserId] = useState<string | null>(null); // user_id保持用
+    const [userId, setUserId] = useState<string | null>(null);
 
+    // --- ユーザー情報の初期取得 ---
     useEffect(() => {
         const getUser = async () => {
             const {
@@ -23,53 +25,64 @@ export default function CreateReportScreen() {
             } = await supabase.auth.getUser();
             if (user) {
                 setUserName(user.user_metadata.full_name || "名無し");
-                setUserId(user.id); // 自分のIDをセット
+                setUserId(user.id);
             }
         };
         getUser();
     }, []);
 
+    // --- 保存処理 (Handle Submit) ---
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!userId) return alert("ログインしてください");
+
+        if (!userId) {
+            alert("セッションが切れました。再ログインしてください。");
+            return;
+        }
 
         setLoading(true);
 
-        const { error } = await supabase.from("daily_reports").insert([
-            {
-                user_id: userId,
-                user_name: userName,
-                title: title,
-                content: content,
-                category: category,
-                date: date,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-            },
-        ]);
+        try {
+            const { error } = await supabase.from("daily_reports").insert([
+                {
+                    user_id: userId,
+                    user_name: userName,
+                    title: title,
+                    content: content,
+                    category: category,
+                    date: date,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                },
+            ]);
 
-        if (error) {
-            alert("保存に失敗しました: " + error.message);
-            console.error(error);
-        } else {
-            alert("日報を保存しました！");
-            router.push("/"); // ダッシュボードへ戻る
+            if (error) {
+                alert("保存に失敗しました: " + error.message);
+                console.error(error);
+                setLoading(false); // エラー時はボタンを元に戻す
+            } else {
+                alert("日報を保存しました！"); // ダッシュボードへ戻る
+                router.push("/reports"); // 一覧へ戻る
+            }
+        } catch (err) {
+            console.error("予期せぬエラー:", err);
+            setLoading(false);
         }
-        setLoading(false);
     };
 
-    // --- 以下、JSX（見た目）の部分は変更なしでOK ---
+    // プレビュー用アバターURL
     const avatarUrl = userName
         ? `https://api.dicebear.com/7.x/shapes/svg?seed=${userName}&backgroundColor=0a5b83,1c799f,69d2e7,f1f4dc,f88c49`
         : "";
 
     return (
         <div className="min-h-screen bg-[#f3f4f6] font-sans text-slate-900">
+            {/* ヘッダー */}
             <header className="bg-[#1e3a8a] text-white shadow-md sticky top-0 z-10">
                 <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
                     <div
                         onClick={() => router.push("/")}
-                        className="text-xl font-bold tracking-wider cursor-pointer"
+                        className="text-xl font-bold tracking-wider cursor-pointer hover:opacity-90 transition-opacity"
                     >
                         Team Activity Log
                     </div>
@@ -78,9 +91,10 @@ export default function CreateReportScreen() {
                             {userName ? `${userName} ▼` : "読み込み中..."}
                         </span>
                         <div className="h-9 w-9 rounded-full bg-white text-[#1e3a8a] overflow-hidden shadow-inner border border-slate-200">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                                 src={avatarUrl}
-                                alt=""
+                                alt="Avatar"
                                 className="w-full h-full object-cover"
                             />
                         </div>
@@ -89,32 +103,23 @@ export default function CreateReportScreen() {
             </header>
 
             <main className="max-w-3xl mx-auto px-6 py-10">
+                {/* 戻るボタンとタイトル */}
                 <div className="mb-6 flex items-center gap-3">
                     <button
                         onClick={() => router.back()}
-                        className="text-slate-400 hover:text-[#2dd4bf] transition-colors"
+                        className="p-2 -ml-2 text-slate-400 hover:text-[#2dd4bf] hover:bg-white rounded-full transition-all"
                     >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="24"
-                            height="24"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                        >
-                            <path d="m15 18-6-6 6-6" />
-                        </svg>
+                        <ChevronLeft size={24} />
                     </button>
                     <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">
                         新規日報作成
                     </h1>
                 </div>
 
+                {/* フォームカード */}
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                     <form className="p-8 space-y-6" onSubmit={handleSave}>
+                        {/* 日付とカテゴリ */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <label className="block text-sm font-bold text-slate-700">
@@ -147,6 +152,8 @@ export default function CreateReportScreen() {
                                 </select>
                             </div>
                         </div>
+
+                        {/* タイトル */}
                         <div className="space-y-2">
                             <label className="block text-sm font-bold text-slate-700">
                                 タイトル <span className="text-red-500">*</span>
@@ -158,8 +165,11 @@ export default function CreateReportScreen() {
                                 placeholder="例：本日の開発進捗について"
                                 className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 text-sm focus:bg-white focus:outline-none focus:border-[#2dd4bf] focus:ring-2 focus:ring-[#2dd4bf]/20 transition-all"
                                 required
+                                maxLength={50}
                             />
                         </div>
+
+                        {/* 本文 */}
                         <div className="space-y-2">
                             <label className="block text-sm font-bold text-slate-700">
                                 業務内容・所感{" "}
@@ -170,10 +180,12 @@ export default function CreateReportScreen() {
                                 value={content}
                                 onChange={(e) => setContent(e.target.value)}
                                 placeholder="本日の業務内容や気づきを記入してください"
-                                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 text-sm leading-relaxed focus:bg-white focus:outline-none focus:border-[#2dd4bf] focus:ring-2 focus:ring-[#2dd4bf]/20 transition-all resize-y"
+                                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 text-sm leading-relaxed focus:bg-white focus:outline-none focus:border-[#2dd4bf] focus:ring-2 focus:ring-[#2dd4bf]/20 transition-all resize-y min-h-37.5"
                                 required
                             ></textarea>
                         </div>
+
+                        {/* フッターボタン */}
                         <div className="pt-6 border-t border-slate-100 flex justify-end gap-3">
                             <button
                                 type="button"
@@ -185,9 +197,22 @@ export default function CreateReportScreen() {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="px-8 py-3 rounded-lg font-bold text-white bg-[#2dd4bf] hover:bg-[#25b5a3] shadow-sm transition-colors flex items-center gap-2 disabled:opacity-50"
+                                className="px-8 py-3 rounded-lg font-bold text-white bg-[#2dd4bf] hover:bg-[#25b5a3] shadow-sm transition-all flex items-center gap-2 disabled:opacity-50 active:scale-95"
                             >
-                                {loading ? "保存中..." : "日報を保存する"}
+                                {loading ? (
+                                    <>
+                                        <Loader2
+                                            className="animate-spin"
+                                            size={18}
+                                        />
+                                        保存中...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Save size={18} />
+                                        日報を保存する
+                                    </>
+                                )}
                             </button>
                         </div>
                     </form>
