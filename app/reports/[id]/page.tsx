@@ -50,7 +50,7 @@ export default function ReportDetail() {
             } = await supabase.auth.getUser();
             setCurrentUserId(user?.id || null);
 
-            // 2. 日報データの取得 (テーブル名を daily_reports に修正)
+            // 2. 日報データの取得
             const { data, error } = await supabase
                 .from("daily_reports")
                 .select("*")
@@ -117,7 +117,7 @@ export default function ReportDetail() {
             <header className="bg-[#1e3a8a] text-white p-4 sticky top-0 z-10 shadow-md">
                 <div className="max-w-4xl mx-auto flex items-center justify-between">
                     <button
-                        onClick={() => router.push("/")}
+                        onClick={() => router.push("/reports")}
                         className="flex items-center gap-1 text-sm opacity-80 hover:opacity-100 transition-opacity"
                     >
                         <ChevronLeft size={18} /> ダッシュボードに戻る
