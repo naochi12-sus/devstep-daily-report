@@ -198,7 +198,12 @@ function Header({ userName }: { userName: string }) {
                     Team Activity Log
                 </div>
                 <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
+                    {/* ここから変更：プロフィール画面への遷移ボタン */}
+                    <button
+                        onClick={() => router.push("/profile")}
+                        className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer text-left"
+                        title="プロフィールを編集"
+                    >
                         <span className="text-sm font-medium">{userName}</span>
                         <div className="h-9 w-9 rounded-full bg-white overflow-hidden border border-white/20">
                             {avatarUrl && (
@@ -210,7 +215,8 @@ function Header({ userName }: { userName: string }) {
                                 />
                             )}
                         </div>
-                    </div>
+                    </button>
+
                     <button
                         onClick={handleLogout}
                         className="p-2 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors bg-white/10 ml-2"

@@ -132,14 +132,14 @@ export default function ProfileEditPage() {
                         <div className="mt-12 flex items-center justify-end gap-4">
                             <button
                                 onClick={() => router.back()}
-                                className="px-6 py-2.5 rounded-xl text-slate-500 font-bold hover:bg-slate-50 transition-colors"
+                                className="px-6 py-2.5 rounded-xl text-slate-500 font-bold hover:bg-slate-50 transition-colors cursor-pointer "
                             >
                                 キャンセル
                             </button>
                             <button
                                 onClick={handleSave}
                                 disabled={isSaving || !name}
-                                className="flex items-center gap-2 px-8 py-2.5 rounded-xl bg-[#2dd4bf] hover:bg-[#25b5a3] disabled:bg-slate-200 text-white font-bold shadow-md shadow-[#2dd4bf]/20 transition-all active:scale-95"
+                                className="flex items-center gap-2 px-8 py-2.5 rounded-xl bg-[#2dd4bf] hover:bg-[#25b5a3] disabled:bg-slate-200 text-white font-bold shadow-md shadow-[#2dd4bf]/20 transition-all active:scale-95 cursor-pointer "
                             >
                                 {isSaving ? (
                                     <Loader2
