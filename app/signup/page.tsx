@@ -114,7 +114,7 @@ export default function SignupPage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full py-3 px-4 bg-[#20c997] hover:bg-[#1ba87e] text-white font-bold rounded-lg shadow-sm transition-colors flex justify-center items-center gap-2 mt-4 disabled:opacity-50"
+                            className="w-full py-3 px-4 bg-[#20c997] hover:bg-[#1ba87e] text-white font-bold rounded-lg shadow-sm transition-colors flex justify-center items-center gap-2 mt-4 disabled:opacity-50 cursor-pointer "
                         >
                             {loading ? "登録中..." : "アカウントを作成する"}
                             {!loading && (

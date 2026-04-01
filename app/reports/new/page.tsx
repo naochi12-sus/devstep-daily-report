@@ -24,12 +24,16 @@ export default function CreateReportScreen() {
                 data: { user },
             } = await supabase.auth.getUser();
             if (user) {
+                // ログインしている場合の処理
                 setUserName(user.user_metadata.full_name || "名無し");
                 setUserId(user.id);
+            } else {
+                // 未認証の場合はログイン画面へリダイレクト
+                router.push("/");
             }
         };
         getUser();
-    }, []);
+    }, [router]);
 
     // --- 保存処理 (Handle Submit) ---
     const handleSave = async (e: React.FormEvent) => {
@@ -70,35 +74,17 @@ export default function CreateReportScreen() {
         }
     };
 
-    // プレビュー用アバターURL
-    const avatarUrl = userName
-        ? `https://api.dicebear.com/7.x/shapes/svg?seed=${userName}&backgroundColor=0a5b83,1c799f,69d2e7,f1f4dc,f88c49`
-        : "";
-
     return (
         <div className="min-h-screen bg-[#f3f4f6] font-sans text-slate-900">
             {/* ヘッダー */}
             <header className="bg-[#1e3a8a] text-white shadow-md sticky top-0 z-10">
                 <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-                    <div
-                        onClick={() => router.push("/")}
-                        className="text-xl font-bold tracking-wider cursor-pointer hover:opacity-90 transition-opacity"
-                    >
+                    <div className="text-xl font-bold tracking-wider ">
+                        {/* アプリ名を表示させる */}
                         Team Activity Log
                     </div>
-                    <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium">
-                            {userName ? `${userName} ▼` : "読み込み中..."}
-                        </span>
-                        <div className="h-9 w-9 rounded-full bg-white text-[#1e3a8a] overflow-hidden shadow-inner border border-slate-200">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                                src={avatarUrl}
-                                alt="Avatar"
-                                className="w-full h-full object-cover"
-                            />
-                        </div>
-                    </div>
+                    {/* ユーザー名を表示させる */}
+                    <div className="text-sm font-medium">{userName} さん</div>
                 </div>
             </header>
 
@@ -112,7 +98,7 @@ export default function CreateReportScreen() {
                         <ChevronLeft size={24} />
                     </button>
                     <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">
-                        新規日報作成
+                        日報作成画面
                     </h1>
                 </div>
 
@@ -190,14 +176,14 @@ export default function CreateReportScreen() {
                             <button
                                 type="button"
                                 onClick={() => router.push("/")}
-                                className="px-6 py-3 rounded-lg font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors"
+                                className="px-6 py-3 rounded-lg font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer "
                             >
                                 キャンセル
                             </button>
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="px-8 py-3 rounded-lg font-bold text-white bg-[#2dd4bf] hover:bg-[#25b5a3] shadow-sm transition-all flex items-center gap-2 disabled:opacity-50 active:scale-95"
+                                className="px-8 py-3 rounded-lg font-bold text-white bg-[#2dd4bf] hover:bg-[#25b5a3] shadow-sm transition-all flex items-center gap-2 disabled:opacity-50 active:scale-95 cursor-pointer "
                             >
                                 {loading ? (
                                     <>

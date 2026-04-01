@@ -76,7 +76,7 @@ export default function ResetPasswordPage() {
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="w-full py-3 px-4 bg-emerald-400 hover:bg-emerald-500 text-white font-bold rounded-lg shadow-sm transition-colors flex justify-center items-center gap-2 mt-4 disabled:opacity-50"
+                                    className="w-full py-3 px-4 bg-emerald-400 hover:bg-emerald-500 text-white font-bold rounded-lg shadow-sm transition-colors flex justify-center items-center gap-2 mt-4 disabled:opacity-50 cursor-pointer "
                                 >
                                     {loading
                                         ? "送信中..."

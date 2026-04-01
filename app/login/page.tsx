@@ -93,7 +93,7 @@ export default function LoginPage() {
                     <button
                         type="submit"
                         disabled={loading} // 処理中はボタンを無効化
-                        className="w-full bg-emerald-400 hover:bg-emerald-500 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-sm disabled:opacity-50"
+                        className="w-full bg-emerald-400 hover:bg-emerald-500 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-sm disabled:opacity-50 cursor-pointer "
                     >
                         {loading ? "ログイン中..." : "ダッシュボードへログイン"}
                         {!loading && <span>→</span>}

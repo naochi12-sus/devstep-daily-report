@@ -12,7 +12,7 @@ import {
     Send,
 } from "lucide-react";
 
-// --- 1. 型定義 (any禁止ルールに対応) ---
+// --- 1. 型定義 ---
 interface Report {
     id: string;
     user_id: string;
@@ -26,7 +26,7 @@ interface Report {
 interface Comment {
     id: string;
     user_id: string;
-    user_name: string; // 本来はusersテーブルと結合しますが、まずは簡易的に
+    user_name: string;
     content: string;
     created_at: string;
 }
@@ -35,38 +35,104 @@ export default function ReportDetail() {
     const { id } = useParams();
     const router = useRouter();
 
-    // 状態管理
     const [report, setReport] = useState<Report | null>(null);
     const [comments, setComments] = useState<Comment[]>([]);
     const [newComment, setNewComment] = useState("");
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [loginUser, setLoginUser] = useState("");
     const [loading, setLoading] = useState(true);
+
+    // カテゴリ情報を判定する関数
+    const getCategoryInfo = (category: string) => {
+        switch (category) {
+            case "dev":
+            case "開発":
+                return {
+                    label: "開発",
+                    badge: "bg-[#2dd4bf]",
+                    border: "border-[#2dd4bf]",
+                    header: "bg-[#ecfeff]",
+                };
+            case "meeting":
+            case "会議":
+                return {
+                    label: "会議",
+                    badge: "bg-[#3b82f6]",
+                    border: "border-[#3b82f6]",
+                    header: "bg-[#eff6ff]",
+                };
+            case "sales":
+            case "営業":
+                return {
+                    label: "営業",
+                    badge: "bg-[#fb923c]",
+                    border: "border-[#fb923c]",
+                    header: "bg-[#fff7ed]",
+                };
+            case "other":
+            case "その他":
+                return {
+                    label: "その他",
+                    badge: "bg-[#d946ef]",
+                    border: "border-[#d946ef]",
+                    header: "bg-[#fdf4ff]",
+                };
+            default:
+                return {
+                    label: category || "未分類",
+                    badge: "bg-slate-500",
+                    border: "border-slate-500",
+                    header: "bg-slate-50",
+                };
+        }
+    };
 
     useEffect(() => {
         const initialize = async () => {
+            setLoading(true);
+
             // 1. ログインユーザー情報の取得
             const {
                 data: { user },
             } = await supabase.auth.getUser();
-            setCurrentUserId(user?.id || null);
+            if (user) {
+                setLoginUser(user.user_metadata.full_name || "名無し");
+            } else {
+                router.push("/login"); //ここがリダイレクト処理
+                return; // 未認証の場合はここで処理を終了し、データ取得を防ぐ
+            }
 
-            // 2. 日報データの取得
-            const { data, error } = await supabase
+            // ログインしていれば、IDと名前をセット
+            setCurrentUserId(user.id);
+            setLoginUser(user.user_metadata.full_name || "名無し");
+
+            // 2. 日報データの取得（これ以降はログイン済みの場合のみ実行される）
+            const { data: reportData, error: reportError } = await supabase
                 .from("daily_reports")
                 .select("*")
                 .eq("id", id)
                 .single();
 
-            if (!error) {
-                setReport(data);
-                // 3. 本来はここでコメントも取得します（今回は一旦空配列）
+            if (!reportError && reportData) {
+                setReport(reportData);
+
+                // 3. コメントデータの読み込み
+                const { data: commentData, error: commentError } =
+                    await supabase
+                        .from("comments")
+                        .select("*")
+                        .eq("report_id", id)
+                        .order("created_at", { ascending: true });
+
+                if (!commentError) {
+                    setComments(commentData || []);
+                }
             }
             setLoading(false);
         };
         initialize();
-    }, [id]);
+    }, [id, router]); // 💡 router も依存配列に追加しておくと安全
 
-    // 削除処理
     const handleDelete = async () => {
         if (!confirm("この日報を削除してもよろしいですか？")) return;
         const { error } = await supabase
@@ -76,27 +142,33 @@ export default function ReportDetail() {
 
         if (!error) {
             alert("削除しました");
-            router.push("/reports"); // 一覧へ戻る
+            router.push("/reports");
         }
     };
 
-    // コメント投稿処理 (追加)
+    // 本物のコメント投稿処理 (Supabaseへ保存)
     const handleCommentSubmit = async () => {
-        if (!newComment.trim()) return;
+        if (!newComment.trim() || !currentUserId) return;
 
-        // 本来は supabase.from("comments").insert(...) を行いますが、
-        // 現時点では画面上の反映のみシミュレーション
-        const mockComment: Comment = {
-            id: Math.random().toString(),
-            user_id: currentUserId || "",
-            user_name: "自分",
-            content: newComment,
-            created_at: new Date().toISOString(),
-        };
+        const { data, error } = await supabase
+            .from("comments")
+            .insert([
+                {
+                    report_id: id,
+                    user_id: currentUserId,
+                    user_name: loginUser, // 自分の名前を保存
+                    content: newComment,
+                },
+            ])
+            .select()
+            .single();
 
-        setComments([...comments, mockComment]);
-        setNewComment("");
-        alert("コメントを送信しました（DB連携は別途実装）");
+        if (error) {
+            alert("エラーが発生しました: " + error.message);
+        } else if (data) {
+            setComments([...comments, data]); // 画面のリストに追加
+            setNewComment(""); // 入力欄を空にする
+        }
     };
 
     if (loading)
@@ -111,27 +183,45 @@ export default function ReportDetail() {
         );
 
     const isOwner = currentUserId === report.user_id;
+    const catInfo = getCategoryInfo(report.category);
 
     return (
-        <div className="min-h-screen bg-[#f3f4f6] pb-10 font-sans">
-            <header className="bg-[#1e3a8a] text-white p-4 sticky top-0 z-10 shadow-md">
-                <div className="max-w-4xl mx-auto flex items-center justify-between">
-                    <button
-                        onClick={() => router.push("/reports")}
-                        className="flex items-center gap-1 text-sm opacity-80 hover:opacity-100 transition-opacity"
-                    >
-                        <ChevronLeft size={18} /> ダッシュボードに戻る
-                    </button>
+        <div className="min-h-screen bg-[#f3f4f6] font-sans text-slate-900">
+            {/* ヘッダー */}
+            <header className="bg-[#1e3a8a] text-white shadow-md sticky top-0 z-10">
+                <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+                    <div className="text-xl font-bold tracking-wider ">
+                        {/* アプリ名を表示させる */}
+                        Team Activity Log
+                    </div>
+                    {/* ユーザー名を表示させる */}
+                    <div className="text-sm font-medium">{loginUser} さん</div>
                 </div>
             </header>
 
-            <main className="max-w-4xl mx-auto px-4 mt-6 space-y-6">
-                {/* 日報メインカード */}
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <main className="max-w-3xl mx-auto px-6 py-10 space-y-6">
+                {/* 戻るボタンとタイトル */}
+                <div className="mb-6 flex items-center gap-3">
+                    <button
+                        onClick={() => router.back()}
+                        className="p-2 -ml-2 text-slate-400 hover:text-[#2dd4bf] hover:bg-white rounded-full transition-all"
+                    >
+                        <ChevronLeft size={24} />
+                    </button>
+                    <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">
+                        日報詳細画面
+                    </h1>
+                </div>
+
+                {/* 日報詳細カード */}
+                <div
+                    className={`bg-white rounded-xl shadow-sm border-t-4 ${catInfo.border} border-x border-b border-slate-200 overflow-hidden`}
+                >
                     <div className="p-8">
                         <div className="flex justify-between items-start mb-6">
                             <div className="flex items-center gap-4">
                                 <div className="h-12 w-12 rounded-full bg-slate-100 border border-slate-200 overflow-hidden">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img
                                         src={`https://api.dicebear.com/7.x/shapes/svg?seed=${report.user_name}`}
                                         alt="avatar"
@@ -142,8 +232,11 @@ export default function ReportDetail() {
                                         <span className="font-bold text-slate-800">
                                             {report.user_name}
                                         </span>
-                                        <span className="bg-[#2dd4bf] text-white text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                                            {report.category}
+                                        {/* カテゴリタグを日本語＆テーマカラーに */}
+                                        <span
+                                            className={`${catInfo.badge} text-white text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider`}
+                                        >
+                                            {catInfo.label}
                                         </span>
                                     </div>
                                     <div className="text-xs text-slate-400 flex items-center gap-1 mt-1">
@@ -177,7 +270,10 @@ export default function ReportDetail() {
                             )}
                         </div>
 
-                        <h1 className="text-2xl font-extrabold text-slate-800 mb-8 border-l-4 border-[#2dd4bf] pl-4">
+                        {/* タイトルの左側の線もテーマカラーに */}
+                        <h1
+                            className={`text-2xl font-extrabold text-slate-800 mb-8 border-l-4 ${catInfo.border} pl-4`}
+                        >
                             {report.title}
                         </h1>
 
@@ -187,7 +283,7 @@ export default function ReportDetail() {
                     </div>
                 </div>
 
-                {/* コメントセクション */}
+                {/* コメントカード */}
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                     <div className="px-6 py-4 border-b border-slate-50 flex items-center gap-2 bg-slate-50/50">
                         <MessageSquare size={18} className="text-[#2dd4bf]" />
@@ -200,13 +296,13 @@ export default function ReportDetail() {
                     </div>
 
                     <div className="p-6 space-y-6">
-                        {/* コメント一覧 */}
                         {comments.map((comment) => (
                             <div
                                 key={comment.id}
                                 className="flex gap-4 animate-in fade-in slide-in-from-bottom-2"
                             >
                                 <div className="h-10 w-10 rounded-full bg-slate-100 shrink-0 overflow-hidden border border-slate-200">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img
                                         src={`https://api.dicebear.com/7.x/shapes/svg?seed=${comment.user_name}`}
                                         alt="avatar"
@@ -230,9 +326,9 @@ export default function ReportDetail() {
                             </div>
                         ))}
 
-                        {/* 入力エリア */}
                         <div className="flex gap-4 mt-8 pt-6 border-t border-slate-100">
                             <div className="h-10 w-10 rounded-full bg-slate-100 shrink-0 overflow-hidden border border-slate-200">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
                                     src={`https://api.dicebear.com/7.x/shapes/svg?seed=${currentUserId}`}
                                     alt="my avatar"
@@ -252,7 +348,7 @@ export default function ReportDetail() {
                                     <button
                                         onClick={handleCommentSubmit}
                                         disabled={!newComment.trim()}
-                                        className="bg-[#2dd4bf] hover:bg-[#25b5a3] disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-bold text-sm shadow-sm flex items-center gap-2 transition-all active:scale-95"
+                                        className="px-8 py-3 rounded-lg font-bold text-white bg-[#2dd4bf] hover:bg-[#25b5a3] shadow-sm transition-colors flex items-center gap-2 cursor-pointer "
                                     >
                                         <Send size={16} /> 送信
                                     </button>

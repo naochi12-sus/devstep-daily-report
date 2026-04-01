@@ -65,7 +65,7 @@ export default function Home() {
         initializeData();
     }, [router]);
 
-    // ✅ カテゴリの英語名を日本語名に変換し、スタイルを返す関数
+    // カテゴリの英語名を日本語名に変換し、スタイルを返す関数
     const getCategoryInfo = (category: string) => {
         switch (category) {
             case "dev":
@@ -116,10 +116,10 @@ export default function Home() {
                     </h1>
                     <button
                         onClick={() => router.push("/reports/new")}
-                        className="bg-[#2dd4bf] hover:bg-[#25b5a3] text-white px-5 py-2.5 rounded-md font-semibold flex items-center gap-2 text-sm transition-colors shadow-sm active:scale-95"
+                        className="bg-[#2dd4bf] hover:bg-[#25b5a3] text-white px-5 py-2.5 rounded-md font-semibold flex items-center gap-2 text-sm transition-colors shadow-sm active:scale-95 cursor-pointer "
                     >
                         <Plus className="h-4 w-4" />
-                        新規日報
+                        日報作成
                     </button>
                 </div>
 
@@ -135,7 +135,7 @@ export default function Home() {
                         </div>
                     ) : reports.length > 0 ? (
                         reports.map((report) => {
-                            // ✅ ここで日本語ラベルと色の情報を取得
+                            // ここで日本語ラベルと色の情報を取得
                             const catInfo = getCategoryInfo(report.category);
                             return (
                                 <ReportCard
@@ -191,10 +191,7 @@ function Header({ userName }: { userName: string }) {
     return (
         <header className="bg-[#1e3a8a] text-white shadow-md sticky top-0 z-10">
             <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-                <div
-                    className="text-xl font-bold cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => router.push("/reports")}
-                >
+                <div className="text-xl font-bold tracking-wider ">
                     Team Activity Log
                 </div>
                 <div className="flex items-center gap-4">

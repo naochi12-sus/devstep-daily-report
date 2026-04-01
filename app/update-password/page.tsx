@@ -51,7 +51,7 @@ export default function UpdatePasswordPage() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full py-3 bg-emerald-400 hover:bg-emerald-500 text-white font-bold rounded-lg disabled:opacity-50"
+                        className="w-full py-3 bg-emerald-400 hover:bg-emerald-500 text-white font-bold rounded-lg disabled:opacity-50 cursor-pointer "
                     >
                         {loading ? "更新中..." : "パスワードを保存する"}
                     </button>

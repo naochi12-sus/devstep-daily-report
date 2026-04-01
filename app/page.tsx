@@ -1,13 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { LayoutDashboard, ArrowRight, UserPlus, LogIn } from "lucide-react"; // 全てのアイコンをここで定義
+import { ArrowRight, LogIn } from "lucide-react"; // 全てのアイコンをここで定義
 
 export default function WelcomePage() {
     const router = useRouter();
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#1e3a8a] to-[#1e40af] flex flex-col items-center justify-center text-white px-6 font-sans">
+        <div className="min-h-screen bg-linear-to-br from-[#1e3a8a] to-[#1e40af] flex flex-col items-center justify-center text-white px-6 font-sans">
             {/* ロゴ・タイトルエリア */}
             <div className="text-center mb-12 space-y-4 animate-in fade-in slide-in-from-top-4 duration-700">
                 <div className="bg-white/10 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 backdrop-blur-sm border border-white/20">
@@ -27,7 +27,7 @@ export default function WelcomePage() {
                 {/*  ログインボタン */}
                 <button
                     onClick={() => router.push("/login")}
-                    className="group bg-[#2dd4bf] hover:bg-[#25b5a3] text-[#1e3a8a] font-black py-4 px-6 rounded-xl flex items-center justify-center gap-2 transition-all shadow-xl hover:shadow-[#2dd4bf]/20 active:scale-95"
+                    className="group bg-[#2dd4bf] hover:bg-[#25b5a3] text-[#1e3a8a] font-black py-4 px-6 rounded-xl flex items-center justify-center gap-2 transition-all shadow-xl hover:shadow-[#2dd4bf]/20 active:scale-95 cursor-pointer "
                 >
                     <LogIn size={20} />
                     ログイン画面へ
@@ -44,7 +44,7 @@ export default function WelcomePage() {
                     </p>
                     <button
                         onClick={() => router.push("/signup")}
-                        className="text-sm font-bold text-[#2dd4bf] hover:text-white transition-colors flex items-center justify-center mx-auto gap-1 group"
+                        className="text-sm font-bold text-[#2dd4bf] hover:text-white transition-colors flex items-center justify-center mx-auto gap-1 group cursor-pointer cursor-pointer "
                     >
                         今すぐアカウントを作成する
                         <ArrowRight

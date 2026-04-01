@@ -16,10 +16,25 @@ export default function EditReportScreen() {
     const [date, setDate] = useState("");
     const [category, setCategory] = useState("dev");
     const [content, setContent] = useState("");
+    const [loginUser, setLoginUser] = useState("");
 
-    // --- 1. 既存データの読み込み ---
+    // --- 1. 認証チェックと既存データの読み込み ---
     useEffect(() => {
         const fetchReport = async () => {
+            setLoading(true); // 念のためローディングを明示
+
+            // 1. ログインユーザー情報の取得
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
+            if (user) {
+                setLoginUser(user.user_metadata.full_name || "名無し");
+            } else {
+                router.push("/login"); //ここがリダイレクト処理
+                return; // 未認証の場合はここで処理を終了し、データ取得を防ぐ
+            }
+
+            //  2. ログインしていれば日報データを取得
             const { data, error } = await supabase
                 .from("daily_reports")
                 .select("*")
@@ -33,6 +48,13 @@ export default function EditReportScreen() {
             }
 
             if (data) {
+                // 他人の日報を編集できないようにするチェックを入れるとより安全
+                if (data.user_id !== user.id) {
+                    alert("他の人の日報は編集できません");
+                    router.push("/reports");
+                    return;
+                }
+
                 setTitle(data.title);
                 setDate(data.date);
                 setCategory(data.category);
@@ -84,15 +106,13 @@ export default function EditReportScreen() {
 
     return (
         <div className="min-h-screen bg-[#f3f4f6] font-sans text-slate-900">
-            {/* ヘッダー部分は省略せずそのまま活用してください */}
             <header className="bg-[#1e3a8a] text-white shadow-md sticky top-0 z-10">
                 <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-                    <div
-                        onClick={() => router.push("/reports")}
-                        className="text-xl font-bold cursor-pointer"
-                    >
+                    <div className="text-xl font-bold tracking-wider ">
                         Team Activity Log
                     </div>
+                    {/* ここでユーザー名を表示させる */}
+                    <div className="text-sm font-medium">{loginUser} さん</div>
                 </div>
             </header>
 
@@ -101,7 +121,7 @@ export default function EditReportScreen() {
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => router.back()}
-                            className="text-slate-400 hover:text-[#2dd4bf]"
+                            className="p-2 -ml-2 text-slate-400 hover:text-[#2dd4bf] hover:bg-white rounded-full transition-all"
                         >
                             <ChevronLeft size={24} />
                         </button>
