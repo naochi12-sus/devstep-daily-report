@@ -13,7 +13,13 @@ export default function CreateReportScreen() {
     const [content, setContent] = useState("");
     const [category, setCategory] = useState("dev");
     const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+
+    // 保存ボタンを押した時のローディング
     const [loading, setLoading] = useState(false);
+
+    // 🌟 追加：ページを開いた時の認証チェック用ローディング（初期値はtrue）
+    const [isAuthLoading, setIsAuthLoading] = useState(true);
+
     const [userName, setUserName] = useState("");
     const [userId, setUserId] = useState<string | null>(null);
 
@@ -27,6 +33,8 @@ export default function CreateReportScreen() {
                 // ログインしている場合の処理
                 setUserName(user.user_metadata.full_name || "名無し");
                 setUserId(user.id);
+                // 認証が確認できたら、ローディング画面を終了してフォームを表示する
+                setIsAuthLoading(false);
             } else {
                 // 未認証の場合はログイン画面へリダイレクト
                 router.push("/");
@@ -73,6 +81,15 @@ export default function CreateReportScreen() {
             setLoading(false);
         }
     };
+
+    // 追加：認証チェックが終わるまでは、画面全体をローディングにする（ここでチラつきを防止！）
+    if (isAuthLoading) {
+        return (
+            <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center">
+                <Loader2 className="animate-spin text-slate-400" size={48} />
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[#f3f4f6] font-sans text-slate-900">
