@@ -30,7 +30,7 @@ export default function EditReportScreen() {
             if (user) {
                 setLoginUser(user.user_metadata.full_name || "名無し");
             } else {
-                router.push("/"); //ここがリダイレクト処理
+                router.push("/login"); //ここがリダイレクト処理
                 return; // 未認証の場合はここで処理を終了し、データ取得を防ぐ
             }
 

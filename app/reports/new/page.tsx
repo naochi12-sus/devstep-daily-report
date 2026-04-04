@@ -17,7 +17,7 @@ export default function CreateReportScreen() {
     // 保存ボタンを押した時のローディング
     const [loading, setLoading] = useState(false);
 
-    // 🌟 追加：ページを開いた時の認証チェック用ローディング（初期値はtrue）
+    // 追加：ページを開いた時の認証チェック用ローディング（初期値はtrue）
     const [isAuthLoading, setIsAuthLoading] = useState(true);
 
     const [userName, setUserName] = useState("");
@@ -37,7 +37,7 @@ export default function CreateReportScreen() {
                 setIsAuthLoading(false);
             } else {
                 // 未認証の場合はログイン画面へリダイレクト
-                router.push("/");
+                router.push("/login");
             }
         };
         getUser();

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { ChevronLeft, Check, Loader2 } from "lucide-react";
+import { User } from "@supabase/supabase-js";
 
 export default function ProfileEditPage() {
     const router = useRouter();
@@ -11,20 +12,43 @@ export default function ProfileEditPage() {
     const [email, setEmail] = useState("");
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [user, setUser] = useState<User | null>(null);
 
     useEffect(() => {
         const fetchUserData = async () => {
-            const {
-                data: { user },
-            } = await supabase.auth.getUser();
-            if (user) {
+            // 1. まずローディングを開始する
+            setLoading(true);
+
+            try {
+                // 2. ユーザー情報を取得
+                const {
+                    data: { user },
+                    error,
+                } = await supabase.auth.getUser();
+
+                // 3. ユーザーがいない、またはエラーがある場合は即リダイレクト
+                if (!user || error) {
+                    // ログインしていない場合はリダイレクトして終了
+                    router.replace("/login");
+                    return;
+                }
+
+                // 4. ユーザーがいた場合のみ、画面に表示する値をセットする
+                // ここで「ユーザーがいたこと」を記録
+                setUser(user);
                 setName(user.user_metadata.full_name || "");
                 setEmail(user.email || "");
+            } catch (error) {
+                console.error("通信エラー:", error);
+                alert("データの取得に失敗しました。");
+            } finally {
+                // 5. 最後にローディングを終了する
+                setLoading(false);
             }
-            setLoading(false);
         };
+
         fetchUserData();
-    }, []);
+    }, [router]);
 
     // ダッシュボードと同じロジックでアバターURLを生成
     const avatarUrl = name
@@ -43,6 +67,15 @@ export default function ProfileEditPage() {
         }, 1000);
     };
 
+    if (loading || !user) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-[#f3f4f6]">
+                <Loader2 className="animate-spin text-[#2dd4bf]" size={40} />
+            </div>
+        );
+    }
+
+    // 読み込み中、または名前がセットされるまでは、メイン画面を絶対に出さない
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[#f3f4f6]">

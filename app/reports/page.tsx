@@ -46,7 +46,7 @@ export default function Home() {
             if (user) {
                 setLoginUser(user.user_metadata.full_name || "名無し");
             } else {
-                router.push("/");
+                router.push("/login");
                 return;
             }
 
