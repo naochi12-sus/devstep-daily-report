@@ -153,13 +153,7 @@ export default function Home() {
                                     department={catInfo.label} // 日本語ラベルを渡す
                                     departmentColor={catInfo.badge}
                                     headerBgColor={catInfo.header}
-                                    date={
-                                        report.date
-                                            ? new Date(
-                                                  report.date,
-                                              ).toLocaleDateString("ja-JP")
-                                            : "日付不明"
-                                    }
+                                    date={String(report.date)}
                                     title={report.title}
                                     content={report.content}
                                     commentCount={0}
@@ -219,7 +213,7 @@ function Header({ userName }: { userName: string }) {
 
                     <button
                         onClick={handleLogout}
-                        className="p-2 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors bg-white/10 ml-2"
+                        className="p-2 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors bg-white/10 ml-2 cursor-pointer"
                         title="ログアウト"
                     >
                         <LogOut size={22} />
@@ -245,7 +239,8 @@ function ReportCard({
     return (
         <div
             onClick={onClick}
-            className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-lg transition-all cursor-pointer group"
+            className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-lg transition-all group"
+            style={{ cursor: "pointer" }}
         >
             <div
                 className={`p-6 pb-3 flex items-center gap-4 ${headerBgColor}`}

@@ -16,19 +16,19 @@ import {
 interface Report {
     id: string;
     user_id: string;
-    user_name: string;
     category: string;
     title: string;
     content: string;
     created_at: string;
+    user_name: string;
 }
 
 interface Comment {
     id: string;
     user_id: string;
-    user_name: string;
     content: string;
     created_at: string;
+    user_name: string;
 }
 
 export default function ReportDetail() {
@@ -98,7 +98,7 @@ export default function ReportDetail() {
             if (user) {
                 setLoginUser(user.user_metadata.full_name || "名無し");
             } else {
-                router.push("/login"); //ここがリダイレクト処理
+                router.push("/"); //ここがリダイレクト処理
                 return; // 未認証の場合はここで処理を終了し、データ取得を防ぐ
             }
 
@@ -112,6 +112,9 @@ export default function ReportDetail() {
                 .select("*")
                 .eq("id", id)
                 .single();
+
+            console.log("取得したデータ:", reportData);
+            console.log("エラー内容:", reportError);
 
             if (!reportError && reportData) {
                 setReport(reportData);
@@ -131,7 +134,7 @@ export default function ReportDetail() {
             setLoading(false);
         };
         initialize();
-    }, [id, router]); // 💡 router も依存配列に追加しておくと安全
+    }, [id, router]); //  router も依存配列に追加しておくと安全
 
     const handleDelete = async () => {
         if (!confirm("この日報を削除してもよろしいですか？")) return;
@@ -156,11 +159,10 @@ export default function ReportDetail() {
                 {
                     report_id: id,
                     user_id: currentUserId,
-                    user_name: loginUser, // 自分の名前を保存
                     content: newComment,
                 },
             ])
-            .select()
+            .select("*, users(name)") // 名前の引っ張り出し追加
             .single();
 
         if (error) {
@@ -204,9 +206,13 @@ export default function ReportDetail() {
                 <div className="mb-6 flex items-center gap-3">
                     <button
                         onClick={() => router.back()}
-                        className="p-2 -ml-2 text-slate-400 hover:text-[#2dd4bf] hover:bg-white rounded-full transition-all"
+                        className="relative z-10 cursor-pointer p-2 -ml-2 text-slate-400 hover:text-[#2dd4bf] hover:bg-white rounded-full transition-all "
                     >
-                        <ChevronLeft size={24} />
+                        {/* pointer-events-none でアイコンへの直接のマウス干渉を防ぐ */}
+                        <ChevronLeft
+                            size={24}
+                            className="pointer-events-none"
+                        />
                     </button>
                     <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">
                         日報詳細画面
@@ -230,7 +236,7 @@ export default function ReportDetail() {
                                 <div>
                                     <div className="flex items-center gap-2">
                                         <span className="font-bold text-slate-800">
-                                            {report.user_name}
+                                            {report.user_name || "名前なし"}
                                         </span>
                                         {/* カテゴリタグを日本語＆テーマカラーに */}
                                         <span
@@ -254,14 +260,14 @@ export default function ReportDetail() {
                                         onClick={() =>
                                             router.push(`/reports/${id}/edit`)
                                         }
-                                        className="p-2 text-slate-400 hover:text-[#2dd4bf] hover:bg-slate-50 rounded-full transition-all"
+                                        className="cursor-pointer p-2 text-slate-400 hover:text-[#2dd4bf] hover:bg-slate-50 rounded-full transition-all"
                                         title="編集"
                                     >
                                         <Pencil size={20} />
                                     </button>
                                     <button
                                         onClick={handleDelete}
-                                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                                        className="cursor-pointer p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
                                         title="削除"
                                     >
                                         <Trash2 size={20} />

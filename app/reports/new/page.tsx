@@ -192,7 +192,7 @@ export default function CreateReportScreen() {
                         <div className="pt-6 border-t border-slate-100 flex justify-end gap-3">
                             <button
                                 type="button"
-                                onClick={() => router.push("/")}
+                                onClick={() => router.push("/reports")}
                                 className="px-6 py-3 rounded-lg font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer "
                             >
                                 キャンセル

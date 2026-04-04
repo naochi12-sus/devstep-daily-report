@@ -30,7 +30,7 @@ export default function EditReportScreen() {
             if (user) {
                 setLoginUser(user.user_metadata.full_name || "名無し");
             } else {
-                router.push("/login"); //ここがリダイレクト処理
+                router.push("/"); //ここがリダイレクト処理
                 return; // 未認証の場合はここで処理を終了し、データ取得を防ぐ
             }
 
@@ -121,7 +121,7 @@ export default function EditReportScreen() {
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => router.back()}
-                            className="p-2 -ml-2 text-slate-400 hover:text-[#2dd4bf] hover:bg-white rounded-full transition-all"
+                            className="cursor-pointer p-2 -ml-2 text-slate-400 hover:text-[#2dd4bf] hover:bg-white rounded-full transition-all"
                         >
                             <ChevronLeft size={24} />
                         </button>
@@ -132,7 +132,7 @@ export default function EditReportScreen() {
 
                     <button
                         onClick={handleDelete}
-                        className="flex items-center gap-1.5 text-sm font-bold text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-md transition-colors"
+                        className="cursor-pointer flex items-center gap-1.5 text-sm font-bold text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-md transition-colors"
                     >
                         <Trash2 size={16} />
                         日報を削除
@@ -201,7 +201,7 @@ export default function EditReportScreen() {
                             <button
                                 type="button"
                                 onClick={() => router.back()}
-                                className="px-6 py-3 rounded-lg font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors"
+                                className="cursor-pointer px-6 py-3 rounded-lg font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors"
                             >
                                 キャンセル
                             </button>
@@ -209,7 +209,7 @@ export default function EditReportScreen() {
                             <button
                                 type="button"
                                 onClick={handleUpdate}
-                                className="px-8 py-3 rounded-lg font-bold text-white bg-[#2dd4bf] hover:bg-[#25b5a3] shadow-sm transition-colors flex items-center gap-2"
+                                className="cursor-pointer px-8 py-3 rounded-lg font-bold text-white bg-[#2dd4bf] hover:bg-[#25b5a3] shadow-sm transition-colors flex items-center gap-2"
                             >
                                 <Save size={18} />
                                 変更を保存する
