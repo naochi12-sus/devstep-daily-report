@@ -76,6 +76,8 @@ export default function CreateReportScreen() {
                     content: content,
                     category: category,
                     date: date,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
                 },
             ]);
 
@@ -126,7 +128,7 @@ export default function CreateReportScreen() {
                 <div className="mb-6 flex items-center gap-3">
                     <button
                         onClick={() => router.back()}
-                        className="p-2 -ml-2 text-slate-400 hover:text-[#2dd4bf] hover:bg-white rounded-full transition-all"
+                        className="cursor-pointer p-2 -ml-2 text-slate-400 hover:text-[#2dd4bf] hover:bg-white rounded-full transition-all"
                     >
                         <ChevronLeft size={24} />
                     </button>
