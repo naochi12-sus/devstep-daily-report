@@ -90,7 +90,7 @@ export default function EditReportScreen() {
             if (error) throw error;
 
             alert("更新しました！");
-            router.push(`/reports/${reportId}`);
+            router.replace("/reports");
         } catch (error) {
             console.error("更新エラー:", error);
             const msg =
