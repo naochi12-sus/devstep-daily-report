@@ -39,9 +39,9 @@ export default function CreateReportScreen() {
                 if (user) {
                     setUserName(user.user_metadata.full_name || "名無し");
                     setUserId(user.id);
-                    setIsAuthLoading(false);
                 } else {
-                    router.push("/login");
+                    router.replace("/login");
+                    return;
                 }
             } catch (error) {
                 console.error("ユーザー情報の取得に失敗:", error);
