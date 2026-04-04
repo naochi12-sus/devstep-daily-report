@@ -10,6 +10,7 @@ import {
     Calendar,
     MessageSquare,
     Send,
+    Loader2,
 } from "lucide-react";
 
 // --- 1. 型定義 ---
@@ -90,33 +91,30 @@ export default function ReportDetail() {
     useEffect(() => {
         const initialize = async () => {
             setLoading(true);
+            try {
+                // 1. ログインユーザーチェック
+                const {
+                    data: { user },
+                    error: authError,
+                } = await supabase.auth.getUser();
+                if (authError || !user) {
+                    router.replace("/login");
+                    return;
+                }
 
-            // 1. ログインユーザー情報の取得
-            const {
-                data: { user },
-            } = await supabase.auth.getUser();
-            if (user) {
                 setLoginUser(user.user_metadata.full_name || "名無し");
-            } else {
-                router.push("/login"); //ここがリダイレクト処理
-                return; // 未認証の場合はここで処理を終了し、データ取得を防ぐ
-            }
+                setCurrentUserId(user.id);
 
-            // ログインしていれば、IDと名前をセット
-            setCurrentUserId(user.id);
-            setLoginUser(user.user_metadata.full_name || "名無し");
+                // 2. 日報データの取得
+                const { data: reportData, error: reportError } = await supabase
+                    .from("daily_reports")
+                    .select("*")
+                    .eq("id", id)
+                    .single();
 
-            // 2. 日報データの取得（これ以降はログイン済みの場合のみ実行される）
-            const { data: reportData, error: reportError } = await supabase
-                .from("daily_reports")
-                .select("*")
-                .eq("id", id)
-                .single();
+                if (reportError) throw reportError; // エラーがあれば catch へ
+                if (!reportData) throw new Error("日報が見つかりませんでした");
 
-            console.log("取得したデータ:", reportData);
-            console.log("エラー内容:", reportError);
-
-            if (!reportError && reportData) {
                 setReport(reportData);
 
                 // 3. コメントデータの読み込み
@@ -127,25 +125,45 @@ export default function ReportDetail() {
                         .eq("report_id", id)
                         .order("created_at", { ascending: true });
 
-                if (!commentError) {
-                    setComments(commentData || []);
-                }
+                if (commentError) throw commentError;
+                setComments(commentData || []);
+            } catch (error) {
+                console.error("データ取得エラー:", error);
+                // エラーの中身を確認してメッセージを作る
+                const errorMessage =
+                    error instanceof Error
+                        ? error.message
+                        : "予期せぬエラーが発生しました";
+
+                alert("データの読み込みに失敗しました: " + errorMessage);
+                router.push("/reports");
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
         initialize();
-    }, [id, router]); //  router も依存配列に追加しておくと安全
+    }, [id, router]);
 
     const handleDelete = async () => {
         if (!confirm("この日報を削除してもよろしいですか？")) return;
-        const { error } = await supabase
-            .from("daily_reports")
-            .delete()
-            .eq("id", id);
 
-        if (!error) {
+        try {
+            const { error } = await supabase
+                .from("daily_reports")
+                .delete()
+                .eq("id", id);
+
+            if (error) throw error;
+
             alert("削除しました");
             router.push("/reports");
+        } catch (error) {
+            console.error("削除エラー:", error);
+            const errorMessage =
+                error instanceof Error
+                    ? error.message
+                    : "予期せぬエラーが発生しました";
+            alert("削除に失敗しました: " + errorMessage);
         }
     };
 
@@ -153,36 +171,61 @@ export default function ReportDetail() {
     const handleCommentSubmit = async () => {
         if (!newComment.trim() || !currentUserId) return;
 
-        const { data, error } = await supabase
-            .from("comments")
-            .insert([
-                {
-                    report_id: id,
-                    user_id: currentUserId,
-                    content: newComment,
-                },
-            ])
-            .select("*, users(name)") // 名前の引っ張り出し追加
-            .single();
+        try {
+            const { data, error } = await supabase
+                .from("comments")
+                .insert([
+                    {
+                        report_id: id,
+                        user_id: currentUserId,
+                        content: newComment,
+                        user_name: loginUser,
+                    },
+                ])
+                .select("*")
+                .single();
 
-        if (error) {
-            alert("エラーが発生しました: " + error.message);
-        } else if (data) {
-            setComments([...comments, data]); // 画面のリストに追加
-            setNewComment(""); // 入力欄を空にする
+            if (error) throw error;
+
+            if (data) {
+                setComments([...comments, data]);
+                setNewComment("");
+            }
+        } catch (error) {
+            console.error("コメント投稿エラー:", error);
+            const errorMessage =
+                error instanceof Error
+                    ? error.message
+                    : "予期せぬエラーが発生しました";
+            alert("コメントの送信に失敗しました: " + errorMessage);
         }
     };
 
-    if (loading)
+    // 読み込み中
+    if (loading) {
         return (
-            <div className="p-10 text-center text-slate-500">読み込み中...</div>
-        );
-    if (!report)
-        return (
-            <div className="p-10 text-center text-slate-500">
-                データが見つかりません
+            <div className="min-h-screen flex items-center justify-center bg-[#f3f4f6]">
+                <Loader2 className="animate-spin text-[#2dd4bf]" size={40} />
             </div>
         );
+    }
+
+    // データが見つからない（404的な状態）
+    if (!report) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-[#f3f4f6] gap-4">
+                <p className="text-slate-500 font-bold">
+                    日報が見つかりませんでした。
+                </p>
+                <button
+                    onClick={() => router.push("/reports")}
+                    className="text-[#2dd4bf] hover:underline"
+                >
+                    一覧に戻る
+                </button>
+            </div>
+        );
+    }
 
     const isOwner = currentUserId === report.user_id;
     const catInfo = getCategoryInfo(report.category);

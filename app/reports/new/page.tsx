@@ -26,35 +26,48 @@ export default function CreateReportScreen() {
     // --- ユーザー情報の初期取得 ---
     useEffect(() => {
         const getUser = async () => {
-            const {
-                data: { user },
-            } = await supabase.auth.getUser();
-            if (user) {
-                // ログインしている場合の処理
-                setUserName(user.user_metadata.full_name || "名無し");
-                setUserId(user.id);
-                // 認証が確認できたら、ローディング画面を終了してフォームを表示する
-                setIsAuthLoading(false);
-            } else {
-                // 未認証の場合はログイン画面へリダイレクト
-                router.push("/login");
+            try {
+                // 1. ユーザー情報を取得
+                const {
+                    data: { user },
+                    error,
+                } = await supabase.auth.getUser();
+
+                // 2. もしエラーがあれば catch ブロックへ
+                if (error) throw error;
+
+                if (user) {
+                    setUserName(user.user_metadata.full_name || "名無し");
+                    setUserId(user.id);
+                    setIsAuthLoading(false);
+                } else {
+                    router.push("/login");
+                }
+            } catch (error) {
+                console.error("ユーザー情報の取得に失敗:", error);
+                alert(
+                    "ログイン情報の確認に失敗しました。再読み込みしてください。",
+                );
             }
         };
         getUser();
     }, [router]);
 
     // --- 保存処理 (Handle Submit) ---
-    const handleSave = async (e: React.FormEvent) => {
+    const handleSave = async (e: React.SubmitEvent) => {
         e.preventDefault();
 
+        // 1. セッション切れのチェック
         if (!userId) {
-            alert("セッションが切れました。再ログインしてください。");
+            alert("ログインの有効期限が切れました。再度ログインしてください。");
+            router.push("/login");
             return;
         }
 
-        setLoading(true);
+        setLoading(true); // ローディング開始
 
         try {
+            // 2. Supabaseへ保存を実行
             const { error } = await supabase.from("daily_reports").insert([
                 {
                     user_id: userId,
@@ -63,21 +76,24 @@ export default function CreateReportScreen() {
                     content: content,
                     category: category,
                     date: date,
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString(),
                 },
             ]);
 
-            if (error) {
-                alert("保存に失敗しました: " + error.message);
-                console.error(error);
-                setLoading(false); // エラー時はボタンを元に戻す
-            } else {
-                alert("日報を保存しました！"); // ダッシュボードへ戻る
-                router.push("/reports"); // 一覧へ戻る
-            }
-        } catch (err) {
-            console.error("予期せぬエラー:", err);
+            // 3. エラーがあればここで catch へジャンプ！
+            if (error) throw error;
+
+            // 4. 成功時の処理
+            alert("日報を保存しました！");
+            router.push("/reports");
+        } catch (error) {
+            // 5. すべてのエラーを一箇所でキャッチ
+            const errorMessage =
+                error instanceof Error
+                    ? error.message
+                    : "予期せぬエラーが発生しました";
+            alert(errorMessage);
+        } finally {
+            // 6. 成功しても失敗しても、最後に必ずくるくるを止める
             setLoading(false);
         }
     };

@@ -21,46 +21,47 @@ export default function EditReportScreen() {
     // --- 1. 認証チェックと既存データの読み込み ---
     useEffect(() => {
         const fetchReport = async () => {
-            setLoading(true); // 念のためローディングを明示
-
-            // 1. ログインユーザー情報の取得
-            const {
-                data: { user },
-            } = await supabase.auth.getUser();
-            if (user) {
-                setLoginUser(user.user_metadata.full_name || "名無し");
-            } else {
-                router.push("/login"); //ここがリダイレクト処理
-                return; // 未認証の場合はここで処理を終了し、データ取得を防ぐ
-            }
-
-            //  2. ログインしていれば日報データを取得
-            const { data, error } = await supabase
-                .from("daily_reports")
-                .select("*")
-                .eq("id", reportId)
-                .single(); // 1件だけ取得
-
-            if (error) {
-                alert("データの取得に失敗しました");
-                router.push("/reports");
-                return;
-            }
-
-            if (data) {
-                // 他人の日報を編集できないようにするチェックを入れるとより安全
-                if (data.user_id !== user.id) {
-                    alert("他の人の日報は編集できません");
-                    router.push("/reports");
+            setLoading(true);
+            try {
+                // 1. ログインユーザーチェック
+                const {
+                    data: { user },
+                    error: authError,
+                } = await supabase.auth.getUser();
+                if (authError || !user) {
+                    router.replace("/login");
                     return;
                 }
+                setLoginUser(user.user_metadata.full_name || "名無し");
 
-                setTitle(data.title);
-                setDate(data.date);
-                setCategory(data.category);
-                setContent(data.content);
+                // 2. 日報データの取得
+                const { data, error } = await supabase
+                    .from("daily_reports")
+                    .select("*")
+                    .eq("id", reportId)
+                    .single();
+
+                if (error) throw error; // 取得エラーなら catch へ
+
+                if (data) {
+                    // 他人の日報を編集できないようにするチェック
+                    if (data.user_id !== user.id) {
+                        alert("ご自身の日報以外は編集できません。");
+                        router.push("/reports");
+                        return;
+                    }
+                    setTitle(data.title);
+                    setDate(data.date);
+                    setCategory(data.category);
+                    setContent(data.content);
+                }
+            } catch (error) {
+                console.error("読み込みエラー:", error);
+                alert("データの取得に失敗しました。一覧に戻ります。");
+                router.push("/reports");
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
 
         if (reportId) fetchReport();
@@ -68,21 +69,35 @@ export default function EditReportScreen() {
 
     // --- 2. 保存処理 (Update) ---
     const handleUpdate = async () => {
-        if (!title || !date || !content) {
-            alert("必須項目を入力してください");
+        if (!title.trim() || !date || !content.trim()) {
+            alert("必須項目をすべて入力してください。");
             return;
         }
 
-        const { error } = await supabase
-            .from("daily_reports")
-            .update({ title, date, category, content, updated_at: new Date() })
-            .eq("id", reportId);
+        setLoading(true); // ボタンの連打防止
+        try {
+            const { error } = await supabase
+                .from("daily_reports")
+                .update({
+                    title,
+                    date,
+                    category,
+                    content,
+                    updated_at: new Date(),
+                })
+                .eq("id", reportId);
 
-        if (error) {
-            alert("更新に失敗しました: " + error.message);
-        } else {
+            if (error) throw error;
+
             alert("更新しました！");
-            router.push(`/reports/${reportId}`); // 詳細画面へ戻る
+            router.push(`/reports/${reportId}`);
+        } catch (error) {
+            console.error("更新エラー:", error);
+            const msg =
+                error instanceof Error ? error.message : "予期せぬエラー";
+            alert("更新に失敗しました: " + msg);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -90,15 +105,26 @@ export default function EditReportScreen() {
     const handleDelete = async () => {
         if (!confirm("本当にこの日報を削除しますか？")) return;
 
-        const { error } = await supabase
-            .from("daily_reports")
-            .delete()
-            .eq("id", reportId);
+        setLoading(true); // 削除中もガードをかける
+        try {
+            const { error } = await supabase
+                .from("daily_reports")
+                .delete()
+                .eq("id", reportId);
 
-        if (error) {
-            alert("削除に失敗しました");
-        } else {
-            router.push("/reports"); // 一覧へ戻る
+            if (error) throw error;
+
+            alert("削除しました。");
+            router.push("/reports");
+        } catch (error) {
+            console.error("削除エラー:", error);
+            const msg =
+                error instanceof Error
+                    ? error.message
+                    : "予期せぬエラーが発生しました";
+            alert("削除に失敗しました: " + msg);
+        } finally {
+            setLoading(false);
         }
     };
 

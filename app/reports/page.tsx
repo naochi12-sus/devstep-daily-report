@@ -14,6 +14,7 @@ interface Report {
     date: string;
     title: string;
     content: string;
+    comments?: { count: number }[];
 }
 
 interface ReportCardProps {
@@ -39,28 +40,42 @@ export default function Home() {
     useEffect(() => {
         const initializeData = async () => {
             setLoading(true);
-
-            const {
-                data: { user },
-            } = await supabase.auth.getUser();
-            if (user) {
+            try {
+                // 1. ログインユーザーチェック
+                const {
+                    data: { user },
+                    error: authError,
+                } = await supabase.auth.getUser();
+                if (authError || !user) {
+                    router.push("/login");
+                    return;
+                }
                 setLoginUser(user.user_metadata.full_name || "名無し");
-            } else {
-                router.push("/login");
-                return;
-            }
 
-            const { data, error } = await supabase
-                .from("daily_reports")
-                .select("*")
-                .order("created_at", { ascending: false });
+                // 2. 日報一覧の取得
+                const { data, error: reportsError } = await supabase
+                    .from("daily_reports")
+                    .select(
+                        `
+        *,
+        comments(count)
+    `,
+                    ) // 「全部 ＋ コメントの数」も取ってきて！という命令
+                    .order("created_at", { ascending: false });
 
-            if (error) {
-                console.error("データ取得エラー:", error.message);
-            } else {
+                if (reportsError) throw reportsError;
+
                 setReports(data || []);
+            } catch (error) {
+                console.error("データ取得エラー:", error);
+                const msg =
+                    error instanceof Error
+                        ? error.message
+                        : "データの読み込みに失敗しました";
+                alert(msg);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
         initializeData();
     }, [router]);
@@ -156,7 +171,9 @@ export default function Home() {
                                     date={String(report.date)}
                                     title={report.title}
                                     content={report.content}
-                                    commentCount={0}
+                                    commentCount={
+                                        report.comments?.[0]?.count || 0
+                                    }
                                 />
                             );
                         })
@@ -181,8 +198,14 @@ function Header({ userName }: { userName: string }) {
 
     const handleLogout = async () => {
         if (!confirm("ログアウトしますか？")) return;
-        await supabase.auth.signOut();
-        router.push("/");
+        try {
+            const { error } = await supabase.auth.signOut();
+            if (error) throw error;
+            router.push("/login");
+        } catch (error) {
+            console.error("ログアウトエラー:", error);
+            alert("ログアウトに失敗しました。もう一度お試しください。");
+        }
     };
 
     return (
