@@ -26,9 +26,8 @@ export default function ProfileEditPage() {
                     error,
                 } = await supabase.auth.getUser();
 
-                // 3. ユーザーがいない、またはエラーがある場合は即リダイレクト
+                // 3. ログインしているユーザーがいない、またはエラーがある場合は即リダイレクトして終了
                 if (!user || error) {
-                    // ログインしていない場合はリダイレクトして終了
                     router.replace("/login");
                     return;
                 }
@@ -56,27 +55,32 @@ export default function ProfileEditPage() {
         : `https://api.dicebear.com/7.x/shapes/svg?seed=default&backgroundColor=cbd5e1`;
 
     const handleSave = async () => {
+        // 1. 保存開始（ボタンをローディング表示にする）
         setIsSaving(true);
-        // ここにSupabaseのユーザーメタデータ更新処理を記述
-        // await supabase.auth.updateUser({ data: { full_name: name } });
 
-        // シミュレーション用
-        setTimeout(() => {
+        try {
+            // 2. 実際にSupabaseのユーザー情報を更新する（要件 6-1, 7-2）
+            const { error } = await supabase.auth.updateUser({
+                data: { full_name: name },
+            });
+
+            // エラーが発生していたら catch ブロックへ飛ばす
+            if (error) throw error;
+
+            // 3. 成功したら通知を出してダッシュボードへ（要件 7-2）
+            alert("プロフィールを更新しました！");
+            router.push("/reports");
+        } catch (error) {
+            // 4. 通信エラーやサーバーエラーを捕まえる
+            console.error("更新エラー:", error);
+            alert("保存に失敗しました。ネットワーク状況を確認してください。");
+        } finally {
+            // 5. 成功しても失敗しても、保存中フラグを解除する
             setIsSaving(false);
-            router.push("/"); // 保存後ダッシュボードへ
-        }, 1000);
+        }
     };
 
     if (loading || !user) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-[#f3f4f6]">
-                <Loader2 className="animate-spin text-[#2dd4bf]" size={40} />
-            </div>
-        );
-    }
-
-    // 読み込み中、または名前がセットされるまでは、メイン画面を絶対に出さない
-    if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[#f3f4f6]">
                 <Loader2 className="animate-spin text-[#2dd4bf]" size={40} />
