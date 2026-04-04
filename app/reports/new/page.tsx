@@ -48,6 +48,8 @@ export default function CreateReportScreen() {
                 alert(
                     "ログイン情報の確認に失敗しました。再読み込みしてください。",
                 );
+            } finally {
+                setIsAuthLoading(false);
             }
         };
         getUser();
