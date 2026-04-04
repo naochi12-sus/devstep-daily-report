@@ -25,35 +25,45 @@ export default function CreateReportScreen() {
 
     // --- ユーザー情報の初期取得 ---
     useEffect(() => {
-        const getUser = async () => {
+        const checkAuth = async () => {
             try {
-                // 1. ユーザー情報を取得
+                // 1. ユーザー情報を取得（静かにチェック）
                 const {
                     data: { user },
                     error,
                 } = await supabase.auth.getUser();
 
-                // 2. もしエラーがあれば catch ブロックへ
-                if (error) throw error;
-
-                if (user) {
-                    setUserName(user.user_metadata.full_name || "名無し");
-                    setUserId(user.id);
-                } else {
+                // 2. ログインしていない、またはエラーの場合
+                if (error || !user) {
+                    // アラートは出さずに、黙ってログイン画面へ飛ばす
                     router.replace("/login");
                     return;
                 }
-            } catch (error) {
-                console.error("ユーザー情報の取得に失敗:", error);
-                alert(
-                    "ログイン情報の確認に失敗しました。再読み込みしてください。",
-                );
-            } finally {
+
+                // 3. ログイン成功時のみ、情報をセットして「くるくる」を解く
+                setUserName(user.user_metadata.full_name || "名無し");
+                setUserId(user.id);
                 setIsAuthLoading(false);
+            } catch (error) {
+                // 通信エラーなどの本当の異常時だけログを出す
+                console.error("Auth check failed", error);
+                router.replace("/login");
             }
+            // ★ここでは finally で setIsAuthLoading(false) を「あえて」しません！
+            // ログインしていない時はずっとローディングのままにして、移動を待ちます。
         };
-        getUser();
+        checkAuth();
     }, [router]);
+
+    // --- 画面表示のガード ---
+    // 認証が終わるまで、あるいはログインしていない間は、絶対に下の HTML (return) を見せない！
+    if (isAuthLoading || !userId) {
+        return (
+            <div className="min-h-screen bg-white flex items-center justify-center">
+                <Loader2 className="animate-spin text-slate-400" size={48} />
+            </div>
+        );
+    }
 
     // --- 保存処理 (Handle Submit) ---
     const handleSave = async (e: React.SubmitEvent) => {
