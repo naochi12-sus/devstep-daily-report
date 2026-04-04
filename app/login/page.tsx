@@ -11,21 +11,36 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false); // ローディング状態を追加
     const router = useRouter();
 
-    const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault(); // フォームの送信によるリロードを防ぐ
+    const handleLogin = async (e: React.SubmitEvent<HTMLFormElement>) => {
+        e.preventDefault();
         setLoading(true);
 
-        const { error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
+        try {
+            // 1. ログイン実行
+            const { error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
 
-        if (error) {
-            alert("ログイン失敗: " + error.message);
-        } else {
-            router.push("/reports"); // ログイン成功後日報一覧ページへ
+            // 2. もし認証エラー（パスワード違いなど）があれば catch へ飛ばす
+            if (error) throw error;
+
+            // 3. 成功したらダッシュボードへ
+            router.push("/reports");
+        } catch (error) {
+            // 4. ここですべてのエラーを安全に処理
+            console.error("ログインエラー:", error);
+
+            const errorMessage =
+                error instanceof Error
+                    ? error.message
+                    : "予期せぬエラーが発生しました";
+
+            alert("ログインに失敗しました: " + errorMessage);
+        } finally {
+            // 5. 成功・失敗に関わらず、最後は必ずボタンのローディングを解除
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     return (

@@ -9,22 +9,40 @@ export default function ResetPasswordPage() {
     const [loading, setLoading] = useState(false);
     const [isSent, setIsSent] = useState(false); // 送信完了状態を管理
 
-    const handleResetPassword = async (e: React.FormEvent) => {
+    const handleResetPassword = async (
+        e: React.SubmitEvent<HTMLFormElement>,
+    ) => {
         e.preventDefault();
         setLoading(true);
 
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            // メールのリンクを押した後に飛ばす先のURL or パスワードを実際に書き換えるページ
-            redirectTo: `${window.location.origin}/update-password`,
-        });
+        try {
+            // 1. パスワードリセットメールの送信
+            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                // メールのリンクを押した後に飛ばす先のURL
+                redirectTo: `${window.location.origin}/update-password`,
+            });
 
-        if (error) {
-            alert("エラーが発生しました: " + error.message);
-        } else {
-            setIsSent(true); // 「メールを送りました」
+            // 2. エラーがあれば catch ブロックへ投げる
+            if (error) throw error;
+
+            // 3. 成功時
+            setIsSent(true);
+        } catch (error) {
+            // 4. ここですべてのエラー（通信エラーなども含む）をキャッチ
+            console.error("リセットメール送信エラー:", error);
+
+            const errorMessage =
+                error instanceof Error
+                    ? error.message
+                    : "予期せぬエラーが発生しました";
+
+            alert("エラーが発生しました: " + errorMessage);
+        } finally {
+            // 5. 成功・失敗に関わらず、最後は必ずローディングを解除
+            setLoading(false);
         }
-        setLoading(false);
     };
+
     return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 font-sans p-4">
             {/* アプリ名とサブタイトル */}

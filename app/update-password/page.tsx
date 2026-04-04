@@ -9,22 +9,38 @@ export default function UpdatePasswordPage() {
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
-    const handleUpdate = async (e: React.FormEvent) => {
+    const handleUpdate = async (e: React.SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
         setLoading(true);
 
-        // 新しいパスワードでユーザー情報を更新する
-        const { error } = await supabase.auth.updateUser({
-            password: newPassword,
-        });
+        try {
+            // 1. 新しいパスワードでユーザー情報を更新する
+            const { error } = await supabase.auth.updateUser({
+                password: newPassword,
+            });
 
-        if (error) {
-            alert("更新エラー: " + error.message);
-        } else {
-            alert("パスワードが更新されました！");
-            router.push("/login"); // ログイン画面へ
+            // 2. エラーがあれば catch ブロックへ投げる
+            if (error) throw error;
+
+            // 3. 成功時
+            alert(
+                "パスワードが更新されました！新しいパスワードでログインしてください。",
+            );
+            router.push("/login");
+        } catch (error) {
+            // 4. ここですべてのエラーをキャッチ
+            console.error("パスワード更新エラー:", error);
+
+            const errorMessage =
+                error instanceof Error
+                    ? error.message
+                    : "パスワードの更新中に予期せぬエラーが発生しました";
+
+            alert("更新に失敗しました: " + errorMessage);
+        } finally {
+            // 5. 最後に必ずローディングを解除する
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     return (

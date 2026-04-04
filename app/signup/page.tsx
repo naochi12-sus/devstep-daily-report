@@ -12,29 +12,43 @@ export default function SignupPage() {
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
-    const handleSignUp = async (e: React.FormEvent) => {
+    const handleSignUp = async (e: React.SubmitEvent<HTMLFormElement>) => {
         e.preventDefault(); // リロード防止
         setLoading(true);
 
-        // Supabaseの新規登録機能を使う
-        const { error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                // お名前をメタデータとして保存
-                data: {
-                    full_name: name,
+        try {
+            // 1. Supabaseの新規登録機能を使う
+            const { error } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    // お名前をメタデータとして保存
+                    data: {
+                        full_name: name,
+                    },
                 },
-            },
-        });
+            });
 
-        if (error) {
-            alert("登録失敗: " + error.message);
-        } else {
+            // 2. エラーがあれば catch ブロックへ投げる
+            if (error) throw error;
+
+            // 3. 成功時
             alert("登録が完了しました！ログイン画面へ移動します。");
-            router.push("/login"); // 登録後はログインへ
+            router.push("/login");
+        } catch (error) {
+            // 4. ここですべてのエラーをキャッチ
+            console.error("登録エラー:", error);
+
+            const errorMessage =
+                error instanceof Error
+                    ? error.message
+                    : "登録中に予期せぬエラーが発生しました";
+
+            alert("登録に失敗しました: " + errorMessage);
+        } finally {
+            // 5. 最後に必ずローディングを解除する
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     return (
