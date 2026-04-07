@@ -270,6 +270,7 @@ export default function ReportDetail() {
                         <div className="flex justify-between items-start mb-6">
                             <div className="flex items-center gap-4">
                                 <div className="h-12 w-12 rounded-full bg-slate-100 border border-slate-200 overflow-hidden">
+                                    {/* 投稿者のアイコン */}
                                     {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img
                                         src={`https://api.dicebear.com/7.x/shapes/svg?seed=${report.user_name}`}
@@ -351,10 +352,12 @@ export default function ReportDetail() {
                                 className="flex gap-4 animate-in fade-in slide-in-from-bottom-2"
                             >
                                 <div className="h-10 w-10 rounded-full bg-slate-100 shrink-0 overflow-hidden border border-slate-200">
+                                    {/* 他人のコメントアイコン */}
                                     {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img
-                                        src={`https://api.dicebear.com/7.x/shapes/svg?seed=${comment.user_name}`}
-                                        alt="avatar"
+                                        src={`https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(comment.user_name)}`}
+                                        alt="commenter avatar"
+                                        className="w-full h-full object-cover"
                                     />
                                 </div>
                                 <div className="flex-1 bg-slate-50 p-4 rounded-2xl relative">
@@ -377,10 +380,12 @@ export default function ReportDetail() {
 
                         <div className="flex gap-4 mt-8 pt-6 border-t border-slate-100">
                             <div className="h-10 w-10 rounded-full bg-slate-100 shrink-0 overflow-hidden border border-slate-200">
+                                {/* 自分のコメントアイコン（ログイン者） */}
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
-                                    src={`https://api.dicebear.com/7.x/shapes/svg?seed=${currentUserId}`}
+                                    src={`https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(loginUser || "me")}`}
                                     alt="my avatar"
+                                    className="w-full h-full object-cover"
                                 />
                             </div>
                             <div className="flex-1 space-y-3">

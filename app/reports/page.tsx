@@ -18,7 +18,7 @@ interface Report {
 }
 
 interface ReportCardProps {
-    initials: string;
+    avatarUrl: string;
     name: string;
     department: string;
     departmentColor: string;
@@ -161,9 +161,6 @@ export default function Home() {
                                     onClick={() =>
                                         router.push(`/reports/${report.id}`)
                                     }
-                                    initials={
-                                        report.user_name?.charAt(0) || "？"
-                                    }
                                     name={report.user_name || "不明"}
                                     department={catInfo.label} // 日本語ラベルを渡す
                                     departmentColor={catInfo.badge}
@@ -174,6 +171,7 @@ export default function Home() {
                                     commentCount={
                                         report.comments?.[0]?.count || 0
                                     }
+                                    avatarUrl={`https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(report.user_name || "guest")}`}
                                 />
                             );
                         })
@@ -248,7 +246,7 @@ function Header({ userName }: { userName: string }) {
 }
 
 function ReportCard({
-    initials,
+    avatarUrl,
     name,
     department,
     departmentColor,
@@ -268,8 +266,13 @@ function ReportCard({
             <div
                 className={`p-6 pb-3 flex items-center gap-4 ${headerBgColor}`}
             >
-                <div className="h-11 w-11 rounded-full bg-white flex items-center justify-center text-slate-500 font-bold border border-slate-100">
-                    {initials}
+                <div className="h-11 w-11 rounded-full bg-white flex items-center justify-center text-slate-500 font-bold border border-slate-100 overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                        src={avatarUrl}
+                        alt={name}
+                        className="w-full h-full object-cover"
+                    />
                 </div>
                 <div className="flex-1">
                     <div className="flex items-center gap-3 mb-1">
