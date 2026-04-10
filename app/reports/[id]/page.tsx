@@ -230,6 +230,25 @@ export default function ReportDetail() {
     const isOwner = currentUserId === report.user_id;
     const catInfo = getCategoryInfo(report.category);
 
+    const handleDeleteComment = async (commentId: string) => {
+        if (!confirm("このコメントを削除してもよろしいですか？")) return;
+
+        try {
+            const { error } = await supabase
+                .from("comments")
+                .delete()
+                .eq("id", commentId);
+
+            if (error) throw error;
+
+            // 成功したら、今の画面に表示されているコメント一覧から消したものを除く
+            setComments(comments.filter((c) => c.id !== commentId));
+        } catch (error) {
+            console.error("コメント削除エラー:", error);
+            alert("コメントの削除に失敗しました");
+        }
+    };
+
     return (
         <div className="min-h-screen bg-[#f3f4f6] font-sans text-slate-900">
             {/* ヘッダー */}
@@ -370,6 +389,20 @@ export default function ReportDetail() {
                                                 comment.created_at,
                                             ).toLocaleString("ja-JP")}
                                         </span>
+                                        {/* 削除ボタンのみ*/}
+                                        {currentUserId === comment.user_id && (
+                                            <button
+                                                onClick={() =>
+                                                    handleDeleteComment(
+                                                        comment.id,
+                                                    )
+                                                }
+                                                className="cursor-pointer p-1 text-slate-400 hover:text-red-500 hover:bg-white rounded-full transition-all"
+                                                title="削除"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        )}
                                     </div>
                                     <p className="text-sm text-slate-600">
                                         {comment.content}

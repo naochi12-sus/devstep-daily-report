@@ -36,6 +36,13 @@ export default function Home() {
     const [loading, setLoading] = useState(true);
     const [loginUser, setLoginUser] = useState("");
     const router = useRouter();
+    const [userList, setUserList] = useState<string[]>([]); // ユーザー名のリスト
+    const [selectedUser, setSelectedUser] = useState("すべてのユーザー"); // 選択されているユーザー
+    const [currentPage, setCurrentPage] = useState(1); // 今のページ番号
+    const [totalCount, setTotalCount] = useState(0); // 全体の投稿数
+    const itemsPerPage = 5; // 1ページに表示する件数
+    const [selectedCategory, setSelectedCategory] =
+        useState("すべてのカテゴリ");
 
     useEffect(() => {
         const initializeData = async () => {
@@ -44,28 +51,52 @@ export default function Home() {
                 // 1. ログインユーザーチェック
                 const {
                     data: { user },
-                    error: authError,
                 } = await supabase.auth.getUser();
-                if (authError || !user) {
+                if (!user) {
                     router.push("/login");
                     return;
                 }
                 setLoginUser(user.user_metadata.full_name || "名無し");
 
-                // 2. 日報一覧の取得
-                const { data, error: reportsError } = await supabase
+                // 2. ユーザー一覧（名前リスト）を作成するために全日報から名前を取る
+                const { data: nameData } = await supabase
                     .from("daily_reports")
-                    .select(
-                        `
-        *,
-        comments(count)
-    `,
-                    ) // 「全部 ＋ コメントの数」も取ってきて！という命令
-                    .order("created_at", { ascending: false });
+                    .select("user_name");
+                if (nameData) {
+                    const uniqueNames = Array.from(
+                        new Set(
+                            nameData.map((item) => item.user_name || "不明"),
+                        ),
+                    );
+                    setUserList(uniqueNames);
+                }
 
-                if (reportsError) throw reportsError;
+                // 3. 日報一覧の取得（絞り込み ＋ ページネーション）
+                let query = supabase
+                    .from("daily_reports")
+                    .select("*, comments(count)", { count: "exact" });
+
+                // ★ ユーザーで絞り込み
+                if (selectedUser !== "すべてのユーザー") {
+                    query = query.eq("user_name", selectedUser);
+                }
+
+                // ★ カテゴリで絞り込み
+                if (selectedCategory !== "すべてのカテゴリ") {
+                    query = query.eq("category", selectedCategory);
+                }
+
+                const from = (currentPage - 1) * itemsPerPage;
+                const to = from + itemsPerPage - 1;
+
+                const { data, error, count } = await query
+                    .order("created_at", { ascending: false })
+                    .range(from, to);
+
+                if (error) throw error;
 
                 setReports(data || []);
+                setTotalCount(count || 0);
             } catch (error) {
                 console.error("データ取得エラー:", error);
                 const msg =
@@ -74,11 +105,11 @@ export default function Home() {
                         : "データの読み込みに失敗しました";
                 alert(msg);
             } finally {
-                setLoading(false);
+                setLoading(false); // 全て終わったらローディング解除
             }
         };
         initializeData();
-    }, [router]);
+    }, [currentPage, selectedUser, selectedCategory, router]); // ページが変わるたびにこの一連の流れを再取得
 
     // カテゴリの英語名を日本語名に変換し、スタイルを返す関数
     const getCategoryInfo = (category: string) => {
@@ -147,34 +178,110 @@ export default function Home() {
                     </button>
                 </div>
 
-                <FilterBar />
+                {/* 絞り込みエリア全体を包む箱 */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-8">
+                    {/* ユーザー絞り込み*/}
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase tracking-wider">
+                            User
+                        </label>
+                        <FilterBar
+                            users={userList}
+                            selectedUser={selectedUser}
+                            onUserChange={(name) => {
+                                setSelectedUser(name);
+                                setCurrentPage(1);
+                            }}
+                        />
+                    </div>
+
+                    {/* カテゴリ絞り込み */}
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase tracking-wider">
+                            Category
+                        </label>
+                        <select
+                            value={selectedCategory}
+                            onChange={(e) => {
+                                setSelectedCategory(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            className="h-10.5 px-4 py-2 rounded-md border border-slate-200 bg-white text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#2dd4bf]/20 focus:border-[#2dd4bf] transition-all cursor-pointer shadow-sm min-w-40"
+                        >
+                            <option value="すべてのカテゴリ">
+                                すべてのカテゴリ
+                            </option>
+                            <option value="開発">開発</option>
+                            <option value="会議">会議</option>
+                            <option value="営業">営業</option>
+                            <option value="その他">その他</option>
+                        </select>
+                    </div>
+                </div>
 
                 <div className="space-y-6">
+                    {/*　日報を並べるための箱 */}
                     {/* データがあるか無いかだけの判定 */}
                     {reports.length > 0 ? (
-                        reports.map((report) => {
-                            // ここで日本語ラベルと色の情報を取得
-                            const catInfo = getCategoryInfo(report.category);
-                            return (
-                                <ReportCard
-                                    key={report.id}
-                                    onClick={() =>
-                                        router.push(`/reports/${report.id}`)
+                        <>
+                            {reports.map((report) => {
+                                // ここで日本語ラベルと色の情報を取得
+                                const catInfo = getCategoryInfo(
+                                    report.category,
+                                );
+                                return (
+                                    <ReportCard
+                                        key={report.id}
+                                        onClick={() =>
+                                            router.push(`/reports/${report.id}`)
+                                        }
+                                        name={report.user_name || "不明"}
+                                        department={catInfo.label} // 日本語ラベルを渡す
+                                        departmentColor={catInfo.badge}
+                                        headerBgColor={catInfo.header}
+                                        date={String(report.date)}
+                                        title={report.title}
+                                        content={report.content}
+                                        commentCount={
+                                            report.comments?.[0]?.count || 0
+                                        }
+                                        avatarUrl={`https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(report.user_name || "guest")}`}
+                                    />
+                                );
+                            })}
+                            <div className="flex justify-center items-center gap-6 mt-10 pb-10">
+                                <button
+                                    disabled={currentPage === 1}
+                                    onClick={() => {
+                                        setCurrentPage(currentPage - 1);
+                                        window.scrollTo(0, 0);
+                                    }}
+                                    className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer shadow-sm"
+                                >
+                                    前のページ
+                                </button>
+
+                                <span className="text-sm font-bold text-slate-500">
+                                    {currentPage} /{" "}
+                                    {Math.ceil(totalCount / itemsPerPage)}{" "}
+                                    ページ
+                                </span>
+
+                                <button
+                                    disabled={
+                                        currentPage >=
+                                        Math.ceil(totalCount / itemsPerPage)
                                     }
-                                    name={report.user_name || "不明"}
-                                    department={catInfo.label} // 日本語ラベルを渡す
-                                    departmentColor={catInfo.badge}
-                                    headerBgColor={catInfo.header}
-                                    date={String(report.date)}
-                                    title={report.title}
-                                    content={report.content}
-                                    commentCount={
-                                        report.comments?.[0]?.count || 0
-                                    }
-                                    avatarUrl={`https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(report.user_name || "guest")}`}
-                                />
-                            );
-                        })
+                                    onClick={() => {
+                                        setCurrentPage(currentPage + 1);
+                                        window.scrollTo(0, 0);
+                                    }}
+                                    className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer shadow-sm"
+                                >
+                                    次のページ
+                                </button>
+                            </div>
+                        </>
                     ) : (
                         <p className="text-center text-slate-500 py-20 bg-white rounded-xl border border-dashed border-slate-300">
                             日報がまだありません。
@@ -308,11 +415,28 @@ function ReportCard({
     );
 }
 
-function FilterBar() {
+function FilterBar({
+    users,
+    selectedUser,
+    onUserChange,
+}: {
+    users: string[];
+    selectedUser: string;
+    onUserChange: (name: string) => void;
+}) {
     return (
-        <div className="flex gap-3 mb-8">
-            <select className="px-4 py-2 rounded-md border border-slate-200 bg-white text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#2dd4bf]/20 focus:border-[#2dd4bf] transition-all cursor-pointer">
-                <option>すべてのユーザー</option>
+        <div className="flex gap-3">
+            <select
+                value={selectedUser}
+                onChange={(e) => onUserChange(e.target.value)}
+                className="h-10.5 px-4 py-2 rounded-md border border-slate-200 bg-white text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#2dd4bf]/20 focus:border-[#2dd4bf] transition-all cursor-pointer"
+            >
+                <option value="すべてのユーザー">すべてのユーザー</option>
+                {users.map((name) => (
+                    <option key={name} value={name}>
+                        {name}
+                    </option>
+                ))}
             </select>
         </div>
     );
