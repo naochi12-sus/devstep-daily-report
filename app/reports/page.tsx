@@ -83,7 +83,22 @@ export default function Home() {
 
                 // ★ カテゴリで絞り込み
                 if (selectedCategory !== "すべてのカテゴリ") {
-                    query = query.eq("category", selectedCategory);
+                    // データベースの中身が 'dev' でも '開発' でも見つかるように「or」を使います
+                    if (selectedCategory === "開発") {
+                        query = query.or(`category.eq.開発,category.eq.dev`);
+                    } else if (selectedCategory === "会議") {
+                        query = query.or(
+                            `category.eq.会議,category.eq.meeting`,
+                        );
+                    } else if (selectedCategory === "営業") {
+                        query = query.or(`category.eq.営業,category.eq.sales`);
+                    } else if (selectedCategory === "その他") {
+                        query = query.or(
+                            `category.eq.その他,category.eq.other`,
+                        );
+                    } else {
+                        query = query.eq("category", selectedCategory);
+                    }
                 }
 
                 const from = (currentPage - 1) * itemsPerPage;
@@ -425,19 +440,17 @@ function FilterBar({
     onUserChange: (name: string) => void;
 }) {
     return (
-        <div className="flex gap-3">
-            <select
-                value={selectedUser}
-                onChange={(e) => onUserChange(e.target.value)}
-                className="h-10.5 px-4 py-2 rounded-md border border-slate-200 bg-white text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#2dd4bf]/20 focus:border-[#2dd4bf] transition-all cursor-pointer"
-            >
-                <option value="すべてのユーザー">すべてのユーザー</option>
-                {users.map((name) => (
-                    <option key={name} value={name}>
-                        {name}
-                    </option>
-                ))}
-            </select>
-        </div>
+        <select
+            value={selectedUser}
+            onChange={(e) => onUserChange(e.target.value)}
+            className="h-10.5 px-4 py-2 rounded-md border border-slate-200 bg-white text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#2dd4bf]/20 focus:border-[#2dd4bf] transition-all cursor-pointer shadow-sm min-w-40"
+        >
+            <option value="すべてのユーザー">すべてのユーザー</option>
+            {users.map((name) => (
+                <option key={name} value={name}>
+                    {name}
+                </option>
+            ))}
+        </select>
     );
 }
