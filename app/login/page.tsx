@@ -125,7 +125,7 @@ export default function LoginPage() {
                         アカウントをお持ちでないですか？{" "}
                         <Link
                             href="/signup"
-                            className="font-bold text-[#1e3a8a] hover:underline mb-2"
+                            className="block mt-1 font-bold text-[#1e3a8a] hover:underline mb-2"
                         >
                             新規登録はこちら
                         </Link>
