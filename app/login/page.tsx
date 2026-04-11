@@ -122,7 +122,7 @@ export default function LoginPage() {
                 {/* フッターエリア（新規登録画面への誘導） */}
                 <div className="bg-[#f0fdfa] border-t border-teal-100 p-5 text-center">
                     <p className="text-sm text-slate-500">
-                        アカウントをお持ちでないですか？{" "}
+                        アカウントをお持ちでないですか？ <br />
                         <Link
                             href="/signup"
                             className="block mt-1 font-bold text-[#1e3a8a] hover:underline mb-2"
