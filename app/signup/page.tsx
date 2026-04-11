@@ -52,13 +52,13 @@ export default function SignupPage() {
     };
 
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 font-sans p-4">
-            {/* アプリ名とサブタイトル */}
+        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+            {/* ロゴ・タイトルエリア */}
             <div className="mb-8 text-center">
-                <h1 className="text-4xl font-extrabold text-[#1e3a8a] tracking-tight">
+                <h1 className="text-4xl font-bold text-indigo-900 mb-2">
                     Team Activity Log
                 </h1>
-                <p className="mt-3 text-sm font-medium text-slate-600">
+                <p className="text-slate-600">
                     チームの成長を加速させる日報システム
                 </p>
             </div>
@@ -128,7 +128,7 @@ export default function SignupPage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full py-3 px-4 bg-[#20c997] hover:bg-[#1ba87e] text-white font-bold rounded-lg shadow-sm transition-colors flex justify-center items-center gap-2 mt-4 disabled:opacity-50 cursor-pointer "
+                            className="w-full py-3 px-4 bg-[#2dd4bf] hover:bg-[#25b5a3] text-white font-bold rounded-lg shadow-sm transition-colors flex justify-center items-center gap-2 mt-4 disabled:opacity-50 cursor-pointer "
                         >
                             {loading ? "登録中..." : "アカウントを作成する"}
                             {!loading && (
@@ -151,17 +151,28 @@ export default function SignupPage() {
                     </form>
                 </div>
 
-                {/* フッターエリア（ログイン画面への誘導） */}
-                <div className="bg-[#f0fdfa] border-t border-teal-100 p-5 text-center">
-                    <p className="text-sm text-slate-500">
-                        すでにアカウントをお持ちですか？{" "}
-                        <Link
-                            href="/login"
-                            className="font-bold text-[#1e3a8a] hover:underline"
+                {/* フッターエリア */}
+                <div className="bg-slate-50 border-t border-slate-100 p-5 text-center">
+                    <Link
+                        href="/login"
+                        className="text-sm font-bold text-[#1e3a8a] hover:underline flex justify-center items-center gap-1"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth={2.5}
+                            stroke="currentColor"
+                            className="w-4 h-4"
                         >
-                            ログインはこちら
-                        </Link>
-                    </p>
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+                            />
+                        </svg>
+                        ログイン画面に戻る
+                    </Link>
                 </div>
             </div>
         </div>
