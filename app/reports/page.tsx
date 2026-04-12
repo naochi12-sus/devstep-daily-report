@@ -43,6 +43,9 @@ export default function Home() {
     const itemsPerPage = 5; // 1ページに表示する件数
     const [selectedCategory, setSelectedCategory] =
         useState("すべてのカテゴリ");
+    const [dateFilter, setDateFilter] = useState<"all" | "today" | "yesterday">(
+        "all",
+    );
 
     useEffect(() => {
         const initializeData = async () => {
@@ -76,12 +79,12 @@ export default function Home() {
                     .from("daily_reports")
                     .select("*, comments(count)", { count: "exact" });
 
-                // ★ ユーザーで絞り込み
+                // ユーザーで絞り込み
                 if (selectedUser !== "すべてのユーザー") {
                     query = query.eq("user_name", selectedUser);
                 }
 
-                // ★ カテゴリで絞り込み
+                // カテゴリで絞り込み
                 if (selectedCategory !== "すべてのカテゴリ") {
                     // データベースの中身が 'dev' でも '開発' でも見つかるように「or」を使います
                     if (selectedCategory === "開発") {
@@ -99,6 +102,26 @@ export default function Home() {
                     } else {
                         query = query.eq("category", selectedCategory);
                     }
+                }
+
+                // 日付で絞り込み
+                if (dateFilter !== "all") {
+                    const now = new Date();
+                    const start = new Date(now);
+                    const end = new Date(now);
+
+                    if (dateFilter === "today") {
+                        start.setHours(0, 0, 0, 0);
+                        end.setHours(23, 59, 59, 999);
+                    } else if (dateFilter === "yesterday") {
+                        start.setDate(now.getDate() - 1);
+                        start.setHours(0, 0, 0, 0);
+                        end.setDate(now.getDate() - 1);
+                        end.setHours(23, 59, 59, 999);
+                    }
+                    query = query
+                        .gte("created_at", start.toISOString())
+                        .lte("created_at", end.toISOString());
                 }
 
                 const from = (currentPage - 1) * itemsPerPage;
@@ -123,8 +146,8 @@ export default function Home() {
                 setLoading(false); // 全て終わったらローディング解除
             }
         };
-        initializeData();
-    }, [currentPage, selectedUser, selectedCategory, router]); // ページが変わるたびにこの一連の流れを再取得
+        initializeData(); // 依存配列
+    }, [currentPage, selectedUser, selectedCategory, dateFilter, router]); // ページが変わるたびにこの一連の流れを再取得
 
     // カテゴリの英語名を日本語名に変換し、スタイルを返す関数
     const getCategoryInfo = (category: string) => {
@@ -231,6 +254,42 @@ export default function Home() {
                             <option value="営業">営業</option>
                             <option value="その他">その他</option>
                         </select>
+                    </div>
+
+                    {/* 今日・昨日の切り替えボタン */}
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase tracking-wider">
+                            Quick Filter
+                        </label>
+                        <div className="flex bg-white p-1 rounded-md border border-slate-200 shadow-sm">
+                            <button
+                                onClick={() => {
+                                    setDateFilter("all");
+                                    setCurrentPage(1);
+                                }}
+                                className={`px-3 py-1.5 text-xs font-bold rounded transition-all ${dateFilter === "all" ? "bg-slate-100 text-slate-800" : "text-slate-400 hover:text-slate-600"}`}
+                            >
+                                全て
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setDateFilter("today");
+                                    setCurrentPage(1);
+                                }}
+                                className={`px-3 py-1.5 text-xs font-bold rounded transition-all ${dateFilter === "today" ? "bg-[#2dd4bf] text-white" : "text-slate-400 hover:text-slate-600"}`}
+                            >
+                                今日
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setDateFilter("yesterday");
+                                    setCurrentPage(1);
+                                }}
+                                className={`px-3 py-1.5 text-xs font-bold rounded transition-all ${dateFilter === "yesterday" ? "bg-[#2dd4bf] text-white" : "text-slate-400 hover:text-slate-600"}`}
+                            >
+                                昨日
+                            </button>
+                        </div>
                     </div>
                 </div>
 
