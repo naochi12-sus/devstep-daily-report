@@ -13,6 +13,7 @@ export default function CreateReportScreen() {
     const [content, setContent] = useState("");
     const [category, setCategory] = useState("dev");
     const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+    const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
     // 保存ボタンを押した時のローディング
     const [loading, setLoading] = useState(false);
@@ -22,7 +23,6 @@ export default function CreateReportScreen() {
 
     const [userName, setUserName] = useState("");
     const [userId, setUserId] = useState<string | null>(null);
-
     // --- ユーザー情報の初期取得 ---
     useEffect(() => {
         const checkAuth = async () => {
@@ -66,10 +66,37 @@ export default function CreateReportScreen() {
     }
 
     // --- 保存処理 (Handle Submit) ---
-    const handleSave = async (e: React.SubmitEvent) => {
+    const handleSave = async (e: React.FormEvent) => {
+        // e: React.SubmitEvent を FormEvent に修正
         e.preventDefault();
+        setErrors({}); // 最初はエラーを空にする
 
-        // 1. セッション切れのチェック
+        // --- バリデーションチェック開始 ---
+        const newErrors: { [key: string]: string } = {};
+
+        if (!title.trim()) {
+            newErrors.title = "タイトルを入力してください。";
+        } else if (title.length > 50) {
+            newErrors.title = "タイトルは50文字以内で入力してください。";
+        }
+
+        if (!content.trim()) {
+            newErrors.content = "業務内容を入力してください。";
+        } else if (content.length > 2000) {
+            newErrors.content = "業務内容は2000文字以内で入力してください。";
+        }
+
+        if (!date) {
+            newErrors.date = "日付を選択してください。";
+        }
+
+        // エラーが１つでもあれば、保存を中断する
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            return; // ここで終了！Supabaseには行かせない
+        }
+
+        // セッション切れのチェック
         if (!userId) {
             alert("ログインの有効期限が切れました。再度ログインしてください。");
             router.push("/login");
@@ -196,10 +223,22 @@ export default function CreateReportScreen() {
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
                                 placeholder="例：本日の開発進捗について"
-                                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 text-sm focus:bg-white focus:outline-none focus:border-[#2dd4bf] focus:ring-2 focus:ring-[#2dd4bf]/20 transition-all"
-                                required
-                                maxLength={50}
+                                className={`w-full px-4 py-3 rounded-lg border ${
+                                    errors.title
+                                        ? "border-red-500 ring-2 ring-red-500/10"
+                                        : "border-slate-200"
+                                } bg-slate-50 focus:bg-white focus:outline-none focus:border-[#2dd4bf] transition-all`}
                             />
+                            <div className="flex justify-between mt-1">
+                                <p className="text-xs text-red-500 font-bold">
+                                    {errors.title}
+                                </p>
+                                <p
+                                    className={`text-xs ${title.length > 50 ? "text-red-500" : "text-slate-400"}`}
+                                >
+                                    {title.length} / 50
+                                </p>
+                            </div>
                         </div>
 
                         {/* 本文 */}
@@ -213,9 +252,22 @@ export default function CreateReportScreen() {
                                 value={content}
                                 onChange={(e) => setContent(e.target.value)}
                                 placeholder="本日の業務内容や気づきを記入してください"
-                                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 text-sm leading-relaxed focus:bg-white focus:outline-none focus:border-[#2dd4bf] focus:ring-2 focus:ring-[#2dd4bf]/20 transition-all resize-y min-h-37.5"
-                                required
+                                className={`w-full px-4 py-3 rounded-lg border ${
+                                    errors.content
+                                        ? "border-red-500 ring-2 ring-red-500/10"
+                                        : "border-slate-200"
+                                } bg-slate-50 focus:bg-white focus:outline-none focus:border-[#2dd4bf] transition-all resize-y`}
                             ></textarea>
+                            <div className="flex justify-between mt-1">
+                                <p className="text-xs text-red-500 font-bold">
+                                    {errors.content}
+                                </p>
+                                <p
+                                    className={`text-xs ${content.length > 2000 ? "text-red-500" : "text-slate-400"}`}
+                                >
+                                    {content.length} / 2000
+                                </p>
+                            </div>
                         </div>
 
                         {/* フッターボタン */}

@@ -17,6 +17,7 @@ export default function EditReportScreen() {
     const [category, setCategory] = useState("dev");
     const [content, setContent] = useState("");
     const [loginUser, setLoginUser] = useState("");
+    const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
     // --- 1. 認証チェックと既存データの読み込み ---
     useEffect(() => {
@@ -69,12 +70,35 @@ export default function EditReportScreen() {
 
     // --- 2. 保存処理 (Update) ---
     const handleUpdate = async () => {
-        if (!title.trim() || !date || !content.trim()) {
-            alert("必須項目をすべて入力してください。");
-            return;
+        // 1. まずエラー表示をクリアする
+        setErrors({});
+        const newErrors: { [key: string]: string } = {};
+
+        // 2. 各項目をチェックしていく
+        if (!title.trim()) {
+            newErrors.title = "タイトルを入力してください。";
+        } else if (title.length > 50) {
+            newErrors.title = "タイトルは50文字以内で入力してください。";
         }
 
-        setLoading(true); // ボタンの連打防止
+        if (!date) {
+            newErrors.date = "日付を選択してください。";
+        }
+
+        if (!content.trim()) {
+            newErrors.content = "業務内容を入力してください。";
+        } else if (content.length > 2000) {
+            newErrors.content = "業務内容は2000文字以内で入力してください。";
+        }
+
+        // 3. １つでもエラーがあれば、ここで処理を止める
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            return; // Supabaseへの保存（下の処理）に行かせない
+        }
+
+        // --- ここから下は「エラーがなかった場合」だけ実行される ---
+        setLoading(true);
         try {
             const { error } = await supabase
                 .from("daily_reports")
@@ -170,7 +194,7 @@ export default function EditReportScreen() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <label className="block text-sm font-bold text-slate-700">
-                                    日付 *
+                                    日付 <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="date"
@@ -182,7 +206,8 @@ export default function EditReportScreen() {
 
                             <div className="space-y-2">
                                 <label className="block text-sm font-bold text-slate-700">
-                                    カテゴリ *
+                                    カテゴリ{" "}
+                                    <span className="text-red-500">*</span>
                                 </label>
                                 <select
                                     value={category}
@@ -201,26 +226,55 @@ export default function EditReportScreen() {
 
                         <div className="space-y-2">
                             <label className="block text-sm font-bold text-slate-700">
-                                タイトル *
+                                タイトル <span className="text-red-500">*</span>
                             </label>
                             <input
                                 type="text"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
-                                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-[#2dd4bf] transition-all"
+                                className={`w-full px-4 py-3 rounded-lg border ${
+                                    errors.title
+                                        ? "border-red-500 ring-2 ring-red-500/10"
+                                        : "border-slate-200"
+                                } bg-slate-50 focus:bg-white focus:outline-none focus:border-[#2dd4bf] transition-all`}
                             />
+                            <div className="flex justify-between mt-1">
+                                <p className="text-xs text-red-500 font-bold">
+                                    {errors.title}
+                                </p>
+                                <p
+                                    className={`text-xs ${title.length > 50 ? "text-red-500" : "text-slate-400"}`}
+                                >
+                                    {title.length} / 50
+                                </p>
+                            </div>
                         </div>
 
                         <div className="space-y-2">
                             <label className="block text-sm font-bold text-slate-700">
-                                業務内容・所感 *
+                                業務内容・所感{" "}
+                                <span className="text-red-500">*</span>
                             </label>
                             <textarea
                                 rows={12}
                                 value={content}
                                 onChange={(e) => setContent(e.target.value)}
-                                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-[#2dd4bf] transition-all resize-y"
+                                className={`w-full px-4 py-3 rounded-lg border ${
+                                    errors.content
+                                        ? "border-red-500 ring-2 ring-red-500/10"
+                                        : "border-slate-200"
+                                } bg-slate-50 focus:bg-white focus:outline-none focus:border-[#2dd4bf] transition-all resize-y`}
                             ></textarea>
+                            <div className="flex justify-between mt-1">
+                                <p className="text-xs text-red-500 font-bold">
+                                    {errors.content}
+                                </p>
+                                <p
+                                    className={`text-xs ${content.length > 2000 ? "text-red-500" : "text-slate-400"}`}
+                                >
+                                    {content.length} / 2000
+                                </p>
+                            </div>
                         </div>
 
                         <div className="pt-6 border-t border-slate-100 flex justify-end gap-3">
@@ -235,10 +289,22 @@ export default function EditReportScreen() {
                             <button
                                 type="button"
                                 onClick={handleUpdate}
-                                className="cursor-pointer px-8 py-3 rounded-lg font-bold text-white bg-[#2dd4bf] hover:bg-[#25b5a3] shadow-sm transition-colors flex items-center gap-2"
+                                disabled={loading}
+                                className="cursor-pointer px-8 py-3 rounded-lg font-bold text-white bg-[#2dd4bf] hover:bg-[#25b5a3] shadow-sm transition-colors flex items-center gap-2 disabled:opacity-50"
                             >
-                                <Save size={18} />
-                                変更を保存する
+                                {loading ? (
+                                    <>
+                                        <span className="animate-spin mr-2">
+                                            ⏳
+                                        </span>
+                                        保存中...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Save size={18} />
+                                        変更を保存する
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>

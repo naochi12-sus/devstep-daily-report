@@ -42,6 +42,7 @@ export default function ReportDetail() {
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const [loginUser, setLoginUser] = useState("");
     const [loading, setLoading] = useState(true);
+    const [commentError, setCommentError] = useState("");
 
     // カテゴリ情報を判定する関数
     const getCategoryInfo = (category: string) => {
@@ -169,16 +170,30 @@ export default function ReportDetail() {
 
     // 本物のコメント投稿処理 (Supabaseへ保存)
     const handleCommentSubmit = async () => {
-        if (!newComment.trim() || !currentUserId) return;
+        // 1. エラーをリセット
+        setCommentError("");
+
+        // 2. 文字数チェック
+        const trimmedComment = newComment.trim();
+        if (!trimmedComment) {
+            setCommentError("コメントを入力してください。");
+            return;
+        }
+
+        if (trimmedComment.length > 500) {
+            setCommentError("コメントは500文字以内で入力してください。");
+            return;
+        }
 
         try {
+            // --- ここから下はチェックOKの場合のみ実行される ---
             const { data, error } = await supabase
                 .from("comments")
                 .insert([
                     {
                         report_id: id,
                         user_id: currentUserId,
-                        content: newComment,
+                        content: trimmedComment,
                         user_name: loginUser,
                     },
                 ])
@@ -193,11 +208,7 @@ export default function ReportDetail() {
             }
         } catch (error) {
             console.error("コメント投稿エラー:", error);
-            const errorMessage =
-                error instanceof Error
-                    ? error.message
-                    : "予期せぬエラーが発生しました";
-            alert("コメントの送信に失敗しました: " + errorMessage);
+            alert("送信に失敗しました。");
         }
     };
 
@@ -424,20 +435,47 @@ export default function ReportDetail() {
                             <div className="flex-1 space-y-3">
                                 <textarea
                                     value={newComment}
-                                    onChange={(e) =>
-                                        setNewComment(e.target.value)
-                                    }
+                                    onChange={(e) => {
+                                        setNewComment(e.target.value);
+                                        if (commentError) setCommentError(""); // 入力を始めたらエラーを消す親切設計
+                                    }}
                                     placeholder="コメントを入力..."
-                                    className="w-full bg-white border border-slate-200 rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#2dd4bf]/20 focus:border-[#2dd4bf] transition-all resize-none"
+                                    className={`w-full bg-white border ${
+                                        commentError
+                                            ? "border-red-500 ring-2 ring-red-500/10"
+                                            : "border-slate-200"
+                                    } rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#2dd4bf]/20 focus:border-[#2dd4bf] transition-all resize-none`}
                                     rows={3}
                                 />
-                                <div className="flex justify-end">
+
+                                <div className="flex justify-between items-center">
+                                    {/* 左側にエラーメッセージ */}
+                                    <p className="text-xs text-red-500 font-bold">
+                                        {commentError}
+                                    </p>
+
+                                    {/* 右側に文字数カウント */}
+                                    <p
+                                        className={`text-xs ${newComment.length > 500 ? "text-red-500 font-bold" : "text-slate-400"}`}
+                                    >
+                                        {newComment.length} / 500文字
+                                    </p>
+                                </div>
+
+                                <div className="flex justify-end gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => router.back()}
+                                        className="px-6 py-3 rounded-lg font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
+                                    >
+                                        戻る
+                                    </button>
                                     <button
                                         onClick={handleCommentSubmit}
-                                        disabled={!newComment.trim()}
-                                        className="px-8 py-3 rounded-lg font-bold text-white bg-[#2dd4bf] hover:bg-[#25b5a3] shadow-sm transition-colors flex items-center gap-2 cursor-pointer "
+                                        disabled={!newComment.trim()} // 空の時はボタンを押せなくする
+                                        className="px-8 py-3 rounded-lg font-bold text-white bg-[#2dd4bf] hover:bg-[#25b5a3] shadow-sm transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
                                     >
-                                        <Send size={16} /> 送信
+                                        <Send size={16} /> コメント登録
                                     </button>
                                 </div>
                             </div>
