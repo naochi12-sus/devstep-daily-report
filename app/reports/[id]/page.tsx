@@ -475,7 +475,7 @@ export default function ReportDetail() {
                                         disabled={!newComment.trim()} // 空の時はボタンを押せなくする
                                         className="px-8 py-3 rounded-lg font-bold text-white bg-[#2dd4bf] hover:bg-[#25b5a3] shadow-sm transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
                                     >
-                                        <Send size={16} /> コメント登録
+                                        <Send size={16} /> コメント
                                     </button>
                                 </div>
                             </div>
