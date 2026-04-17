@@ -143,6 +143,7 @@ export default function ProfileEditPage() {
                                 <input
                                     type="text"
                                     value={name}
+                                    maxLength={20}
                                     onChange={(e) => setName(e.target.value)}
                                     placeholder="例：山田 太郎"
                                     className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:bg-white focus:border-[#2dd4bf] focus:ring-4 focus:ring-[#2dd4bf]/10 outline-none transition-all text-slate-800 font-medium"

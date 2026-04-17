@@ -8,7 +8,7 @@ import { Calendar, MessageSquare, Plus, LogOut, Loader2 } from "lucide-react";
 // --- 1. 型定義 ---
 interface Report {
     id: string;
-    user_name: string;
+    users: { name: string } | null;
     category: string;
     created_at: string;
     date: string;
@@ -59,29 +59,56 @@ export default function Home() {
                     router.push("/login");
                     return;
                 }
-                setLoginUser(user.user_metadata.full_name || "名無し");
+                setLoginUser(
+                    user.user_metadata.full_name || "アカウント名が空欄",
+                );
 
-                // 2. ユーザー一覧（名前リスト）を作成するために全日報から名前を取る
+                // 2. ユーザー一覧（プルダウン用名前リスト）を作成するためにユーザーテーブルから名前を取る
                 const { data: nameData } = await supabase
                     .from("daily_reports")
-                    .select("user_name");
+                    .select("users!daily_reports_user_id_fkey(name)");
+
                 if (nameData) {
+                    // anyを使わずに、型安全に名前を抽出します
+                    const rawData = nameData as unknown as {
+                        users: { name: string } | { name: string }[] | null;
+                    }[];
                     const uniqueNames = Array.from(
                         new Set(
-                            nameData.map((item) => item.user_name || "不明"),
+                            rawData
+                                .map((item) => {
+                                    const u = item.users;
+                                    if (Array.isArray(u)) return u[0]?.name;
+                                    return u?.name;
+                                })
+                                .filter(
+                                    (name): name is string =>
+                                        typeof name === "string",
+                                ),
                         ),
                     );
                     setUserList(uniqueNames);
                 }
 
                 // 3. 日報一覧の取得（絞り込み ＋ ページネーション）
-                let query = supabase
-                    .from("daily_reports")
-                    .select("*, comments(count)", { count: "exact" });
+                let query;
 
-                // ユーザーで絞り込み
                 if (selectedUser !== "すべてのユーザー") {
-                    query = query.eq("user_name", selectedUser);
+                    // !inner をつけることで users.name での絞り込みが有効になる
+                    query = supabase
+                        .from("daily_reports")
+                        .select(
+                            "*, users!daily_reports_user_id_fkey!inner(name), comments(count)",
+                            { count: "exact" },
+                        )
+                        .eq("users.name", selectedUser); // ユーザーで絞り込み
+                } else {
+                    query = supabase
+                        .from("daily_reports")
+                        .select(
+                            "*, users!daily_reports_user_id_fkey(name), comments(count)",
+                            { count: "exact" },
+                        );
                 }
 
                 // カテゴリで絞り込み
@@ -303,13 +330,25 @@ export default function Home() {
                                 const catInfo = getCategoryInfo(
                                     report.category,
                                 );
+                                // ★ 表示直前の安全な名前取り出し
+                                let authorName = "不明１";
+                                if (report.users) {
+                                    if (Array.isArray(report.users)) {
+                                        authorName =
+                                            report.users[0]?.name || "不明２";
+                                    } else {
+                                        authorName =
+                                            report.users.name || "不明３";
+                                    }
+                                }
+
                                 return (
                                     <ReportCard
                                         key={report.id}
                                         onClick={() =>
                                             router.push(`/reports/${report.id}`)
                                         }
-                                        name={report.user_name || "不明"}
+                                        name={authorName}
                                         department={catInfo.label} // 日本語ラベルを渡す
                                         departmentColor={catInfo.badge}
                                         headerBgColor={catInfo.header}
@@ -319,7 +358,7 @@ export default function Home() {
                                         commentCount={
                                             report.comments?.[0]?.count || 0
                                         }
-                                        avatarUrl={`https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(report.user_name || "guest")}`}
+                                        avatarUrl={`https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(authorName)}`}
                                     />
                                 );
                             })}

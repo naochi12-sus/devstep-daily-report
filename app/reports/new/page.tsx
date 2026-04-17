@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { ChevronLeft, Save, Loader2 } from "lucide-react";
+import { ChevronLeft, Save, LogOut, Loader2 } from "lucide-react";
 
 export default function CreateReportScreen() {
     const router = useRouter();
@@ -23,6 +23,20 @@ export default function CreateReportScreen() {
 
     const [userName, setUserName] = useState("");
     const [userId, setUserId] = useState<string | null>(null);
+
+    // --- 2.ログアウト処理 ---
+    const handleLogout = async () => {
+        if (!confirm("ログアウトしますか？")) return;
+        try {
+            const { error } = await supabase.auth.signOut();
+            if (error) throw error;
+            router.push("/login");
+        } catch (error) {
+            console.error("ログアウトエラー:", error);
+            alert("ログアウトに失敗しました。もう一度お試しください。");
+        }
+    };
+
     // --- ユーザー情報の初期取得 ---
     useEffect(() => {
         const checkAuth = async () => {
@@ -110,7 +124,6 @@ export default function CreateReportScreen() {
             const { error } = await supabase.from("daily_reports").insert([
                 {
                     user_id: userId,
-                    user_name: userName,
                     title: title,
                     content: content,
                     category: category,
@@ -148,17 +161,48 @@ export default function CreateReportScreen() {
         );
     }
 
+    const avatarUrl = userName
+        ? `https://api.dicebear.com/7.x/shapes/svg?seed=${userName}`
+        : "";
+
     return (
         <div className="min-h-screen bg-[#f3f4f6] font-sans text-slate-900">
             {/* ヘッダー */}
             <header className="bg-[#1e3a8a] text-white shadow-md sticky top-0 z-10">
                 <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
                     <div className="text-xl font-bold tracking-wider ">
-                        {/* アプリ名を表示させる */}
                         Team Activity Log
                     </div>
-                    {/* ユーザー名を表示させる */}
-                    <div className="text-sm font-medium">{userName} さん</div>
+                    <div className="flex items-center gap-4">
+                        {/* ここから変更：プロフィール画面への遷移ボタン */}
+                        <button
+                            onClick={() => router.push("/profile")}
+                            className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer text-left"
+                            title="プロフィールを編集"
+                        >
+                            <span className="text-sm font-medium">
+                                {userName}
+                            </span>
+                            <div className="h-9 w-9 rounded-full bg-white overflow-hidden border border-white/20">
+                                {avatarUrl && (
+                                    /* eslint-disable-next-line @next/next/no-img-element */
+                                    <img
+                                        src={avatarUrl}
+                                        alt="avatar"
+                                        className="w-full h-full object-cover"
+                                    />
+                                )}
+                            </div>
+                        </button>
+
+                        <button
+                            onClick={handleLogout}
+                            className="p-2 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors bg-white/10 ml-2 cursor-pointer"
+                            title="ログアウト"
+                        >
+                            <LogOut size={22} />
+                        </button>
+                    </div>
                 </div>
             </header>
 
@@ -221,6 +265,7 @@ export default function CreateReportScreen() {
                             <input
                                 type="text"
                                 value={title}
+                                maxLength={50}
                                 onChange={(e) => setTitle(e.target.value)}
                                 placeholder="例：本日の開発進捗について"
                                 className={`w-full px-4 py-3 rounded-lg border ${
@@ -250,6 +295,7 @@ export default function CreateReportScreen() {
                             <textarea
                                 rows={10}
                                 value={content}
+                                maxLength={2000}
                                 onChange={(e) => setContent(e.target.value)}
                                 placeholder="本日の業務内容や気づきを記入してください"
                                 className={`w-full px-4 py-3 rounded-lg border ${

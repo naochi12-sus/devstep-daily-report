@@ -11,9 +11,10 @@ import {
     MessageSquare,
     Send,
     Loader2,
+    LogOut,
 } from "lucide-react";
 
-// --- 1. 型定義 ---
+// --- 型定義 ---
 interface Report {
     id: string;
     user_id: string;
@@ -21,7 +22,9 @@ interface Report {
     title: string;
     content: string;
     created_at: string;
-    user_name: string;
+    users: {
+        name: string;
+    }; // 結合したusersテーブルのデータ
 }
 
 interface Comment {
@@ -29,7 +32,9 @@ interface Comment {
     user_id: string;
     content: string;
     created_at: string;
-    user_name: string;
+    users: {
+        name: string;
+    }; // 結合したusersテーブルのデータ
 }
 
 export default function ReportDetail() {
@@ -40,9 +45,23 @@ export default function ReportDetail() {
     const [comments, setComments] = useState<Comment[]>([]);
     const [newComment, setNewComment] = useState("");
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-    const [loginUser, setLoginUser] = useState("");
+    // ヘッダー用：ログインしている人の名前を入れる
+    const [userName, setUserName] = useState("");
     const [loading, setLoading] = useState(true);
     const [commentError, setCommentError] = useState("");
+
+    // --- ログアウト処理 ---
+    const handleLogout = async () => {
+        if (!confirm("ログアウトしますか？")) return;
+        try {
+            const { error } = await supabase.auth.signOut();
+            if (error) throw error;
+            router.push("/login");
+        } catch (error) {
+            console.error("ログアウトエラー:", error);
+            alert("ログアウトに失敗しました。もう一度お試しください。");
+        }
+    };
 
     // カテゴリ情報を判定する関数
     const getCategoryInfo = (category: string) => {
@@ -103,13 +122,13 @@ export default function ReportDetail() {
                     return;
                 }
 
-                setLoginUser(user.user_metadata.full_name || "名無し");
+                setUserName(user.user_metadata.full_name || "名無し");
                 setCurrentUserId(user.id);
 
                 // 2. 日報データの取得
                 const { data: reportData, error: reportError } = await supabase
                     .from("daily_reports")
-                    .select("*")
+                    .select(` *, users (name)`) // usersテーブルからnameだけを結合して取得
                     .eq("id", id)
                     .single();
 
@@ -122,7 +141,7 @@ export default function ReportDetail() {
                 const { data: commentData, error: commentError } =
                     await supabase
                         .from("comments")
-                        .select("*")
+                        .select(` *, users (name)`)
                         .eq("report_id", id)
                         .order("created_at", { ascending: true });
 
@@ -194,7 +213,6 @@ export default function ReportDetail() {
                         report_id: id,
                         user_id: currentUserId,
                         content: trimmedComment,
-                        user_name: loginUser,
                     },
                 ])
                 .select("*")
@@ -203,7 +221,12 @@ export default function ReportDetail() {
             if (error) throw error;
 
             if (data) {
-                setComments([...comments, data]);
+                // 取得したdataに、表示用のusersオブジェクトを結合してstateに入れる
+                const newCommentWithUser = {
+                    ...data,
+                    users: { name: userName },
+                };
+                setComments([...comments, newCommentWithUser]);
                 setNewComment("");
             }
         } catch (error) {
@@ -260,17 +283,49 @@ export default function ReportDetail() {
         }
     };
 
+    // アバターURLの生成（userNameがセットされたら自動で作られる）
+    const avatarUrl = userName
+        ? `https://api.dicebear.com/7.x/shapes/svg?seed=${userName}`
+        : "";
+
     return (
         <div className="min-h-screen bg-[#f3f4f6] font-sans text-slate-900">
             {/* ヘッダー */}
             <header className="bg-[#1e3a8a] text-white shadow-md sticky top-0 z-10">
                 <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
                     <div className="text-xl font-bold tracking-wider ">
-                        {/* アプリ名を表示させる */}
                         Team Activity Log
                     </div>
-                    {/* ユーザー名を表示させる */}
-                    <div className="text-sm font-medium">{loginUser} さん</div>
+                    <div className="flex items-center gap-4">
+                        {/* ここから変更：プロフィール画面への遷移ボタン */}
+                        <button
+                            onClick={() => router.push("/profile")}
+                            className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer text-left"
+                            title="プロフィールを編集"
+                        >
+                            <span className="text-sm font-medium">
+                                {userName}
+                            </span>
+                            <div className="h-9 w-9 rounded-full bg-white overflow-hidden border border-white/20">
+                                {avatarUrl && (
+                                    /* eslint-disable-next-line @next/next/no-img-element */
+                                    <img
+                                        src={avatarUrl}
+                                        alt="avatar"
+                                        className="w-full h-full object-cover"
+                                    />
+                                )}
+                            </div>
+                        </button>
+
+                        <button
+                            onClick={handleLogout}
+                            className="p-2 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors bg-white/10 ml-2 cursor-pointer"
+                            title="ログアウト"
+                        >
+                            <LogOut size={22} />
+                        </button>
+                    </div>
                 </div>
             </header>
 
@@ -303,14 +358,15 @@ export default function ReportDetail() {
                                     {/* 投稿者のアイコン */}
                                     {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img
-                                        src={`https://api.dicebear.com/7.x/shapes/svg?seed=${report.user_name}`}
+                                        src={`https://api.dicebear.com/7.x/shapes/svg?seed=${report.users.name}`}
                                         alt="avatar"
                                     />
                                 </div>
                                 <div>
                                     <div className="flex items-center gap-2">
                                         <span className="font-bold text-slate-800">
-                                            {report.user_name || "名前なし"}
+                                            {report.users.name ||
+                                                "名前なしユーザー"}
                                         </span>
                                         {/* カテゴリタグを日本語＆テーマカラーに */}
                                         <span
@@ -385,7 +441,7 @@ export default function ReportDetail() {
                                     {/* 他人のコメントアイコン */}
                                     {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img
-                                        src={`https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(comment.user_name)}`}
+                                        src={`https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(comment.users?.name)}`}
                                         alt="commenter avatar"
                                         className="w-full h-full object-cover"
                                     />
@@ -393,7 +449,7 @@ export default function ReportDetail() {
                                 <div className="flex-1 bg-slate-50 p-4 rounded-2xl relative">
                                     <div className="flex justify-between mb-1">
                                         <span className="font-bold text-sm text-slate-800">
-                                            {comment.user_name}
+                                            {comment.users.name}
                                         </span>
                                         <span className="text-[10px] text-slate-400">
                                             {new Date(
@@ -427,7 +483,7 @@ export default function ReportDetail() {
                                 {/* 自分のコメントアイコン（ログイン者） */}
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
-                                    src={`https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(loginUser || "me")}`}
+                                    src={`https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(userName || "me")}`}
                                     alt="my avatar"
                                     className="w-full h-full object-cover"
                                 />
@@ -435,6 +491,7 @@ export default function ReportDetail() {
                             <div className="flex-1 space-y-3">
                                 <textarea
                                     value={newComment}
+                                    maxLength={500}
                                     onChange={(e) => {
                                         setNewComment(e.target.value);
                                         if (commentError) setCommentError(""); // 入力を始めたらエラーを消す親切設計
