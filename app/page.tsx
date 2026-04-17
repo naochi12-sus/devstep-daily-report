@@ -44,7 +44,7 @@ export default function WelcomePage() {
                     </p>
                     <button
                         onClick={() => router.push("/signup")}
-                        className="text-sm font-bold text-[#2dd4bf] hover:text-white transition-colors flex items-center justify-center mx-auto gap-1 group cursor-pointer cursor-pointer "
+                        className="text-sm font-bold text-[#2dd4bf] hover:text-white transition-colors flex items-center justify-center mx-auto gap-1 group cursor-pointer "
                     >
                         今すぐアカウントを作成する
                         <ArrowRight
