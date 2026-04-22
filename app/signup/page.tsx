@@ -88,7 +88,7 @@ export default function SignupPage() {
                                 required
                                 value={name} // 追加
                                 onChange={(e) => setName(e.target.value)} // 追加
-                                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#34d399] transition-all text-sm"
+                                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#34d399] transition-all text-sm"
                                 placeholder="山田 太郎"
                             />
                         </div>
@@ -103,7 +103,7 @@ export default function SignupPage() {
                                 required
                                 value={email} // 追加
                                 onChange={(e) => setEmail(e.target.value)} // 追加
-                                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#34d399] transition-all text-sm"
+                                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#34d399] transition-all text-sm"
                                 placeholder="name@example.com"
                             />
                         </div>
@@ -119,7 +119,7 @@ export default function SignupPage() {
                                 minLength={8}
                                 value={password} // 追加
                                 onChange={(e) => setPassword(e.target.value)} // 追加
-                                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#34d399] transition-all text-sm"
+                                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#34d399] transition-all text-sm"
                                 placeholder="8文字以上で入力"
                             />
                         </div>
