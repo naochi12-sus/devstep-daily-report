@@ -26,9 +26,10 @@
 ### 1. フロントエンド
 
 - Next.js 16 (App Router)
-- TypeScript（バグを防ぐための厳格な型定義）
+- TypeScript厳格化（バグを防ぐための厳格な型定義）
 - Tailwind CSS + shadcn/ui
-- PC・スマホで表示可能
+- PC・スマホで表示可能（レスポンシブ設計）
+- 直感的に操作できるUI設計
 
 ### 2. バックエンド
 
@@ -43,7 +44,7 @@
 
 - Vercel（ホスティング環境）
 - GitHub（バージョン管理）
-- GitHub Actions（CI/CD）
+- GitHub Actions（CI/CD設定）カバレッジ74.6%
 
 ### 4. テストコード
 
@@ -53,6 +54,8 @@
 ### 5. その他
 
 - DiceBear API (アバター自動生成)
+- バリデーション
+- Mermaid Live Editor
 
 ## 主な機能（Features）
 
@@ -84,5 +87,3 @@
 ## 画面設計（画面遷移図）
 
 ![画面遷移図](docs/wireframes.png)
-
-「CI/CDテスト実施中」
