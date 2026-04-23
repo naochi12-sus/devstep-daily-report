@@ -59,56 +59,45 @@ export default function Home() {
                     router.push("/login");
                     return;
                 }
+                // 最新のプロフィール名は、DBのusersテーブルから取るのが一番確実です
+                const { data: profile } = await supabase
+                    .from("users")
+                    .select("name")
+                    .eq("id", user.id)
+                    .single();
+
                 setLoginUser(
-                    user.user_metadata.full_name || "アカウント名が空欄",
+                    profile?.name ||
+                        user.user_metadata.full_name ||
+                        "アカウント名が空欄",
                 );
 
-                // 2. ユーザー一覧（プルダウン用名前リスト）を作成するためにユーザーテーブルから名前を取る
-                const { data: nameData } = await supabase
-                    .from("daily_reports")
-                    .select("users!daily_reports_user_id_fkey(name)");
-
-                if (nameData) {
-                    // anyを使わずに、型安全に名前を抽出します
-                    const rawData = nameData as unknown as {
-                        users: { name: string } | { name: string }[] | null;
-                    }[];
-                    const uniqueNames = Array.from(
-                        new Set(
-                            rawData
-                                .map((item) => {
-                                    const u = item.users;
-                                    if (Array.isArray(u)) return u[0]?.name;
-                                    return u?.name;
-                                })
-                                .filter(
-                                    (name): name is string =>
-                                        typeof name === "string",
-                                ),
-                        ),
-                    );
-                    setUserList(uniqueNames);
+                // 2. ユーザー一覧（プルダウン用）
+                // 過去の日報からではなく「ユーザー名簿」から名前を取るようにします
+                const { data: userData } = await supabase
+                    .from("users")
+                    .select("name");
+                if (userData) {
+                    const names = userData.map((u) => u.name).filter(Boolean);
+                    setUserList(Array.from(new Set(names)));
                 }
 
-                // 3. 日報一覧の取得（絞り込み ＋ ページネーション）
-                let query;
+                // 3. 日報一覧の取得
+                let query = supabase
+                    .from("daily_reports")
+                    .select("*, users(name), comments(count)", {
+                        count: "exact",
+                    });
 
+                // ユーザー絞り込み（名簿の名前で探す）
                 if (selectedUser !== "すべてのユーザー") {
-                    // !inner をつけることで users.name での絞り込みが有効になる
+                    // !innerを使うことで、リレーション先の名前で絞り込めます
                     query = supabase
                         .from("daily_reports")
-                        .select(
-                            "*, users!daily_reports_user_id_fkey!inner(name), comments(count)",
-                            { count: "exact" },
-                        )
-                        .eq("users.name", selectedUser); // ユーザーで絞り込み
-                } else {
-                    query = supabase
-                        .from("daily_reports")
-                        .select(
-                            "*, users!daily_reports_user_id_fkey(name), comments(count)",
-                            { count: "exact" },
-                        );
+                        .select("*, users!inner(name), comments(count)", {
+                            count: "exact",
+                        })
+                        .eq("users.name", selectedUser);
                 }
 
                 // カテゴリで絞り込み
@@ -330,38 +319,31 @@ export default function Home() {
                                 const catInfo = getCategoryInfo(
                                     report.category,
                                 );
-                                // ★ 表示直前の安全な名前取り出し
-                                let authorName = "不明１";
-                                if (report.users) {
-                                    if (Array.isArray(report.users)) {
-                                        authorName =
-                                            report.users[0]?.name || "不明２";
-                                    } else {
-                                        authorName =
-                                            report.users.name || "不明３";
-                                    }
-                                }
+                                // 名簿(users)から取れた名前を優先して表示
+                                const displayName =
+                                    report.users?.name || "不明なユーザー";
 
                                 return (
                                     <ReportCard
                                         key={report.id}
-                                        onClick={() =>
-                                            router.push(`/reports/${report.id}`)
-                                        }
-                                        name={authorName}
-                                        department={catInfo.label} // 日本語ラベルを渡す
+                                        name={displayName}
+                                        department={catInfo.label}
                                         departmentColor={catInfo.badge}
                                         headerBgColor={catInfo.header}
-                                        date={String(report.date)}
+                                        date={report.date}
                                         title={report.title}
                                         content={report.content}
                                         commentCount={
                                             report.comments?.[0]?.count || 0
                                         }
-                                        avatarUrl={`https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(authorName)}`}
+                                        avatarUrl={`https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(displayName)}`}
+                                        onClick={() =>
+                                            router.push(`/reports/${report.id}`)
+                                        }
                                     />
                                 );
                             })}
+                            {/* ページネーション */}
                             <div className="flex justify-center items-center gap-6 mt-10 pb-10">
                                 <button
                                     disabled={currentPage === 1}

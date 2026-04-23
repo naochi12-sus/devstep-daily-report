@@ -59,14 +59,22 @@ export default function ProfileEditPage() {
         setIsSaving(true);
 
         try {
-            // 2. 実際にSupabaseのユーザー情報を更新する（要件 6-1, 7-2）
-            const { error } = await supabase.auth.updateUser({
+            // 2. Authの情報を更新（自分のメモ用）
+            const { error: authError } = await supabase.auth.updateUser({
                 data: { full_name: name },
             });
+            if (authError) throw authError;
+            // 2. 追加 データベースの「users」テーブルを更新（全員に見える名簿用）
+            const { error: dbError } = await supabase
+                .from("users") // テーブル名を確認してください（users または profiles など）
+                .update({ name: name }) // 左側はDBのカラム名、右側は入力された変数名
+                .eq("id", user?.id); // 今ログインしている自分のIDの行だけを更新
 
-            // エラーが発生していたら catch ブロックへ飛ばす
-            if (error) throw error;
-
+            if (dbError) {
+                // もしテーブル名やカラム名が違うとここでエラーになります
+                console.error("DB更新エラーの詳細:", dbError);
+                throw dbError;
+            }
             // 3. 成功したら通知を出してダッシュボードへ（要件 7-2）
             alert("プロフィールを更新しました！");
             router.push("/reports");
