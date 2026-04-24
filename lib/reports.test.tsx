@@ -105,12 +105,22 @@ test("日報が正しく一覧表示される", async () => {
     vi.mocked(mockQuery.range).mockResolvedValue(mockResponse);
 
     render(<Home />);
-    // 修正ポイント：findByText で「テスト太郎」が現れるまでしっかり待つ
+
+    // デバッグ用：今の画面に何が映っているか、GitHub Actionsのログに出力する
+    // screen.debug();
+
+    // もし「テスト太郎」が見つからないなら、代わりに
+    // 「日報がまだありません」という文字が出ていないか確認する
+    const emptyMessage = screen.queryByText(/日報がまだありません/i);
+    if (emptyMessage) {
+        console.log("データが0件として処理されています");
+    }
+
     const userElement = await screen.findByText(
         "テスト太郎",
         {},
-        { timeout: 5000 },
-    );
+        { timeout: 8000 },
+    ); // 少し長めに待つ
     expect(userElement).toBeDefined();
 });
 

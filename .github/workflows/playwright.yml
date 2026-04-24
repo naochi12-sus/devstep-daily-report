@@ -9,17 +9,19 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
-
             - uses: actions/setup-node@v4
               with:
                   node-version: 20
 
-            - name: Install root dependencies
+            - name: Install dependencies
               run: npm install
 
-            - name: Install test dependencies
-              run: npm install
-              working-directory: ./my-e2e-test
+            # テスト実行前に、アプリを一度本番用にビルドする
+            - name: Build Next.js app
+              run: npm run build
+              env:
+                  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+                  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
             - name: Install Playwright Browsers
               run: npx playwright install --with-deps
@@ -31,10 +33,3 @@ jobs:
               env:
                   NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
                   NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-
-            - uses: actions/upload-artifact@v4
-              if: failure()
-              with:
-                  name: playwright-report
-                  path: my-e2e-test/playwright-report/
-                  retention-days: 30

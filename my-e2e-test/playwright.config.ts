@@ -1,93 +1,71 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
- */
-// import dotenv from 'dotenv';
-// import path from 'path';
-// dotenv.config({ path: path.resolve(__dirname, '.env') });
-
-/**
- * See https://playwright.dev/docs/test-configuration.
+ * Playwrightの設定ファイル
+ * アプリをどう起動し、どれくらい待つかを決める「指示書」です。
  */
 export default defineConfig({
-    timeout: 60 * 1000, // テスト全体の制限時間を60秒に（30秒から倍に）
+    // テスト全体の制限時間。GitHub Actionsはのんびり動くので、60秒に延ばしています。
+    timeout: 60 * 1000,
     expect: {
-        timeout: 10000, // 要素を探す時間を10秒に
+        // 「ボタンが出るまで待つ」などの判定にかける時間。10秒に設定。
+        timeout: 10000,
     },
 
     testDir: "./tests",
-    /* Run tests in files in parallel */
+    /* 並列実行（複数のテストを同時に走らせる設定） */
     fullyParallel: true,
-    /* Fail the build on CI if you accidentally left test.only in the source code. */
+    /* 本番環境（CI）では、誤って特定のテストだけ実行する設定を残さないようにする */
     forbidOnly: !!process.env.CI,
-    /* Retry on CI only */
+    /* 失敗したときに自動でやり直す回数。CIでは2回まで粘ります */
     retries: process.env.CI ? 2 : 0,
-    /* Opt out of parallel tests on CI. */
+    /* CIでは同時に動かす人数を1人に制限して、サーバーのパンクを防ぎます */
     workers: process.env.CI ? 1 : undefined,
-    /* Reporter to use. See https://playwright.dev/docs/test-reporters */
+    /* テスト結果のレポート形式 */
     reporter: "html",
-    /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
-    use: {
-        /* Base URL to use in actions like `await page.goto('')`. */
-        // baseURL: 'http://localhost:3000',
 
-        /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
+    use: {
+        /* 基準となるURL */
+        baseURL: "http://localhost:3000",
+        /* 失敗した時だけ、証拠写真（トレース）を保存する */
         trace: "on-first-retry",
     },
 
-    /* Configure projects for major browsers */
+    /* どのブラウザでテストするか。基本の3つをセットしています */
     projects: [
         {
             name: "chromium",
             use: { ...devices["Desktop Chrome"] },
         },
-
         {
             name: "firefox",
             use: { ...devices["Desktop Firefox"] },
         },
-
         {
             name: "webkit",
             use: { ...devices["Desktop Safari"] },
         },
-
-        /* Test against mobile viewports. */
-        // {
-        //   name: 'Mobile Chrome',
-        //   use: { ...devices['Pixel 5'] },
-        // },
-        // {
-        //   name: 'Mobile Safari',
-        //   use: { ...devices['iPhone 12'] },
-        // },
-
-        /* Test against branded browsers. */
-        // {
-        //   name: 'Microsoft Edge',
-        //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-        // },
-        // {
-        //   name: 'Google Chrome',
-        //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-        // },
     ],
 
-    /* Run your local dev server before starting the tests */
-    // webServer: {
-    //   command: 'npm run start',
-    //   url: 'http://localhost:3000',
-    //   reuseExistingServer: !process.env.CI,
-    // },
-
+    /**
+     * ここが一番重要！
+     * テストを始める前に「アプリを起動させる」設定です。
+     */
     webServer: {
-        command: "cd .. && npm run dev", // アプリを起動するコマンド
+        // 【修正点】npm run dev ではなく npm run start を使います。
+        // GitHub Actions（本番ビルド環境）では start の方が圧倒的に安定します。
+        command: "cd .. && npm run start",
+
         url: "http://localhost:3000",
+
+        // ローカル開発中は既に起動してればそれを使いますが、CIでは毎回新しく起動します
         reuseExistingServer: !process.env.CI,
+
         stdout: "ignore",
         stderr: "pipe",
-        timeout: 120 * 1000, // 起動に時間がかかる場合があるので長めに
+
+        // 【修正点】起動を待つ時間を「180秒（3分）」に延ばしました。
+        // ビルド直後の起動は時間がかかるため、余裕を持たせています。
+        timeout: 180 * 1000,
     },
 });
