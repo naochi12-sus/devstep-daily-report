@@ -93,7 +93,7 @@ beforeEach(() => {
 // --- 3. テストケース ---
 
 test("日報が正しく一覧表示される", async () => {
-    // 1. まず「偽物のデータ」の中身を作る
+    // 1. 偽物のデータを PostgrestResponse 型で定義
     const mockResponse: PostgrestResponse<ReportData> = {
         data: [
             {
@@ -109,20 +109,25 @@ test("日報が正しく一覧表示される", async () => {
         statusText: "OK",
     };
 
-    // 2. 【ここが重要！】画面を表示する「前」に、偽物のデータをセットしておく
+    // 2. モックをセット。型エラーが出ないよう vi.mocked を適切に使います
+    // range と single の両方が同じ mockResponse（型が一致）を返すように設定
     vi.mocked(mockQuery.range).mockResolvedValue(mockResponse);
+    vi.mocked(mockQuery.single).mockResolvedValue(mockResponse);
 
-    // 3. その後に画面を表示する
+    // 3. 画面を表示
     render(<Home />);
 
-    // 4. 「テスト太郎」が表示されるのを待つ
-    // 5秒だと短い場合があるので、念のため timeout を少し伸ばします
-    const userElement = await screen.findByText(
-        "テスト太郎",
-        {},
-        { timeout: 7000 },
+    // 4. 「日報がまだありません」という表示が消えるのを待つ（タイムアウト対策）
+    await waitFor(
+        () => {
+            const emptyMessage = screen.queryByText(/日報がまだありません/i);
+            expect(emptyMessage).toBeNull();
+        },
+        { timeout: 4000 },
     );
 
+    // 5. データの表示を確認
+    const userElement = await screen.findByText("テスト太郎");
     expect(userElement).toBeDefined();
 });
 
