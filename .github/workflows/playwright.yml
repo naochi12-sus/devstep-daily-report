@@ -1,0 +1,27 @@
+name: Playwright Tests
+on:
+    push:
+        branches: [main, master]
+    pull_request:
+        branches: [main, master]
+jobs:
+    test:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 18
+
+            # my-e2e-test フォルダに移動してインストール
+            - name: Install dependencies
+              run: npm install
+              working-directory: ./my-e2e-test
+
+            - name: Install Playwright Browsers
+              run: npx playwright install --with-deps
+              working-directory: ./my-e2e-test
+
+            - name: Run Playwright tests
+              run: npx playwright test
+              working-directory: ./my-e2e-test
