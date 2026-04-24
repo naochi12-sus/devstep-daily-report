@@ -87,3 +87,69 @@
 ## 画面設計（画面遷移図）
 
 ![画面遷移図](docs/wireframes.png)
+
+### 6. デモURL
+
+### 7. 主要画面スクリーンショット
+
+TOP画面(docs/images/TAL-Top.png)
+ログイン画面(docs/images/TAL-login.png)
+新規登録画面(docs/images/TAL-signup.png)
+リセットパスワード画面(docs/images/TAL-reset-password.png)
+マイ・ダッシュボード画面(docs/images/TAL-dashboard1.png)(docs/images/TAL-dashboard2.png)
+日報作成画面(docs/images/TAL-create-report.png)
+日報詳細画面(docs/images/TAL-report-detail.png)
+プロフィール編集画面(docs/images/TAL-edit-profile.png)
+
+### 8. セットアップ手順
+
+プロジェクトのローカル開発環境を構築するための手順です。
+
+## 1. 必要環境
+
+- **Node.js**: 20.0.0 以上
+- **パッケージマネージャー**: npm または yarn
+
+## 2. インストール
+
+リポジトリをクローンし、依存パッケージをインストールします。
+
+```bash
+# リポジトリをクローン
+git clone [https://github.com/naochi12-sus/devstep-daily-report](https://github.com/naochi12-sus/devstep-daily-report)
+cd devstep-daily-report
+
+# 依存パッケージをインストール
+npm install
+```
+
+## 3. 環境変数の設定
+
+プロジェクト直下に .env.local ファイルを作成し、Supabaseの必要な値を設定する。
+[!NOTE]
+Supabase プロジェクトの作成方法は Supabase 公式ドキュメント （https://supabase.com/doc）を参照してください。
+
+NEXT_PUBLIC_SUPABASE_URL Supabase プロジェクトの URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY Supabase の公開 anon キー
+
+## 4. 開発サーバーの起動
+
+サーバーを起動し、ブラウザで動作確認を行う。
+npm run dev
+
+起動後、 http://localhost:3000 を開く。
+
+## 5. テスト実行方法
+
+テスト種別 コマンド 備考
+ユニットテスト npm run test Vitest を使用
+ユニットテスト（Watch） npm run test:watch ファイル変更時に自動実行
+カバレッジ計測 npm run test:coverage テスト網羅率を確認
+E2Eテスト npm run test:e2e 実行前に npm run dev が必要
+
+## 6. デプロイ方法
+
+本プロジェクトはVercelへのデプロイを想定。
+１．Vercel にログインし、本リポジトリを連携。
+２．Vercel の設定画面で環境変数（NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY）を登録。
+３．main ブランチへのマージにより、自動的に本番環境へデプロイされる。
