@@ -24,6 +24,7 @@ interface PostgrestMock {
     or: ReturnType<typeof vi.fn>;
     gte: ReturnType<typeof vi.fn>;
     lte: ReturnType<typeof vi.fn>;
+    single: ReturnType<typeof vi.fn>;
 }
 
 // --- 2. モックの設定 ---
@@ -48,6 +49,7 @@ const mockQuery: PostgrestMock = {
     or: vi.fn().mockReturnThis(),
     gte: vi.fn().mockReturnThis(),
     lte: vi.fn().mockReturnThis(),
+    single: vi.fn().mockReturnThis(),
 };
 
 vi.mock("./supabase", () => ({
@@ -62,14 +64,20 @@ vi.mock("./supabase", () => ({
 
 beforeEach(() => {
     vi.clearAllMocks();
-    // デフォルトの戻り値を設定しておく（空の成功レスポンス）
-    mockQuery.range.mockResolvedValue({
+
+    // デフォルトの戻り値を設定
+    // range() で呼ばれた場合と single() で呼ばれた場合の両方に、
+    // とりあえず「空の成功データ」を返しておくようにします
+    const successResponse = {
         data: [],
         count: 0,
         error: null,
         status: 200,
         statusText: "OK",
-    });
+    };
+
+    mockQuery.range.mockResolvedValue(successResponse);
+    mockQuery.single.mockResolvedValue(successResponse);
 
     // ログインユーザーのモック（既存のコード）
     const mockUser = {
