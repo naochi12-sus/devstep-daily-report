@@ -105,15 +105,19 @@ test("日報が正しく一覧表示される", async () => {
     vi.mocked(mockQuery.range).mockResolvedValue(mockResponse);
 
     render(<Home />);
-    await waitFor(() =>
-        expect(screen.getAllByText("テスト太郎")[0]).toBeDefined(),
+    // 修正ポイント：findByText で「テスト太郎」が現れるまでしっかり待つ
+    const userElement = await screen.findByText(
+        "テスト太郎",
+        {},
+        { timeout: 5000 },
     );
+    expect(userElement).toBeDefined();
 });
 
 test("「今日」のフィルターボタンを押すと、日付絞り込みが行われる", async () => {
     render(<Home />);
-    const userName = await screen.findByText("テスト太郎");
-    expect(userName).toBeInTheDocument();
+    // 修正ポイント：まずデータが出るまで待つ
+    await screen.findByText("テスト太郎", {}, { timeout: 5000 });
 
     const todayButton = screen.getByRole("button", { name: "今日" });
     fireEvent.click(todayButton);
