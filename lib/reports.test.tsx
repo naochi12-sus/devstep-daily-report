@@ -1,4 +1,10 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import {
+    render,
+    screen,
+    within,
+    fireEvent,
+    waitFor,
+} from "@testing-library/react";
 import Home from "../app/reports/page"; // パスが正しいか確認してください
 import { expect, test, vi, beforeEach } from "vitest";
 import { supabase } from "./supabase";
@@ -127,7 +133,8 @@ test("日報が正しく一覧表示される", async () => {
     );
 
     // 5. データの表示を確認
-    const userElement = await screen.findByText("テスト太郎");
+    const main = screen.getByRole("main");
+    const userElement = await within(main).findByText("テスト太郎");
     expect(userElement).toBeDefined();
 });
 
