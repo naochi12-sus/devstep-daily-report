@@ -78,7 +78,7 @@ export default defineConfig({
     // },
 
     webServer: {
-        command: "npm run dev", // アプリを起動するコマンド
+        command: "cd .. && npm run dev", // アプリを起動するコマンド
         url: "http://localhost:3000",
         reuseExistingServer: !process.env.CI,
         stdout: "ignore",
