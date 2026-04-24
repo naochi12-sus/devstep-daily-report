@@ -62,8 +62,16 @@ vi.mock("./supabase", () => ({
 
 beforeEach(() => {
     vi.clearAllMocks();
-    // ログイン済みとして設定
-    // User型への変換エラーを「unknown」経由で解消
+    // デフォルトの戻り値を設定しておく（空の成功レスポンス）
+    mockQuery.range.mockResolvedValue({
+        data: [],
+        count: 0,
+        error: null,
+        status: 200,
+        statusText: "OK",
+    });
+
+    // ログインユーザーのモック（既存のコード）
     const mockUser = {
         id: "user-123",
         user_metadata: { full_name: "テスト太郎" },
@@ -74,7 +82,6 @@ beforeEach(() => {
         error: null,
     });
 });
-
 // --- 3. テストケース ---
 
 test("日報が正しく一覧表示される", async () => {
@@ -105,9 +112,8 @@ test("日報が正しく一覧表示される", async () => {
 
 test("「今日」のフィルターボタンを押すと、日付絞り込みが行われる", async () => {
     render(<Home />);
-    await waitFor(() =>
-        expect(screen.getAllByText("テスト太郎")[0]).toBeDefined(),
-    );
+    const userName = await screen.findByText("テスト太郎");
+    expect(userName).toBeInTheDocument();
 
     const todayButton = screen.getByRole("button", { name: "今日" });
     fireEvent.click(todayButton);
