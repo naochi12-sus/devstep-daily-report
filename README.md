@@ -151,5 +151,5 @@ E2Eテスト npm run test:e2e 実行前に npm run dev が必要
 
 本プロジェクトはVercelへのデプロイを想定。
 1.Vercel にログインし、本リポジトリを連携。
-2.Vercel の設定画面で環境変数（NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY）を登録。
+2.Vercel の設定画面で環境変数（　NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY　）を登録。
 3.main ブランチへのマージにより、自動的に本番環境へデプロイされる。
