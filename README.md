@@ -90,6 +90,8 @@
 
 ### 6. デモURL
 
+https://app.filmora.io/#/object/d7r9tdhio539089fm5u0?source=%7B%22product_id%22:%222412%22,%22product_page%22:%22share_url%22,%22product_version%22:%2215.4.2.19088%22%7D
+
 ### 7. 主要画面スクリーンショット
 
 TOP画面(docs/images/TAL-Top.png)
